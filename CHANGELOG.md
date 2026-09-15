@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-09-15 @ 19:35
+
 - Move the application, deployment scripts, dependencies, and tests into the separate `snake-web-code` repository.
 - Use a local status-page fixture so code tests run independently of the website checkout.
 
