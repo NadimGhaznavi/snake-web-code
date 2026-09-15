@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Install publishing defaults at `/etc/snake-web/snake-web.env`, preserving existing settings and copying the former `/etc/snake-web.env` when needed; systemd reads the new path.
+
+- Store managed database credentials in `/etc/snake-web/database.env`; install and upgrade preserve credentials from the former Snake Web-managed path when needed.
+
+- Move the DevOps guides from `snake-web` into `docs/devops` and use repository-relative documentation links.
+
 ## [0.2.3] - 2026-09-15 @ 19:35
 
 - Move the application, deployment scripts, dependencies, and tests into the separate `snake-web-code` repository.

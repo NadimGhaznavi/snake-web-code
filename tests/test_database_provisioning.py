@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import MagicMock, patch
 
 import pymysql
 
@@ -34,6 +35,54 @@ class CredentialTests(unittest.TestCase):
             path.symlink_to(target)
             with self.assertRaisesRegex(RuntimeError, 'regular file'):
                 provisioner.load_credentials(path)
+
+
+
+class MigrationTests(unittest.TestCase):
+    def setUp(self):
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        self.legacy = Path(temp.name) / 'old/database.env'
+        self.destination = Path(temp.name) / 'new/database.env'
+        self.legacy.parent.mkdir()
+        self.original = (provisioner.MARKER + '\nDB_HOST=localhost\n'
+                         'DB_SOCKET=/tmp/snake-web-test.sock\nDB_NAME=snakelab\n'
+                         'DB_USER=snake_web_reader\nDB_PASSWORD=' + 'a' * 64 + '\n')
+        self.legacy.write_text(self.original)
+        self.legacy.chmod(0o600)
+        self.admin = MagicMock()
+        self.admin.cursor.return_value.__enter__.return_value.fetchone.return_value = (1,)
+
+    def provision(self):
+        with patch.object(provisioner.pymysql, 'connect', return_value=MagicMock()):
+            provisioner.provision(self.admin, '/tmp/snake-web-test.sock',
+                                  self.destination, self.legacy)
+
+    def test_migration_and_rerun_preserve_password_and_permissions(self):
+        self.provision()
+        self.assertEqual(self.destination.read_text(), self.original)
+        self.assertEqual(self.destination.stat().st_mode & 0o777, 0o600)
+        self.assertEqual(self.destination.parent.stat().st_mode & 0o777, 0o700)
+        self.assertEqual(self.legacy.read_text(), self.original)
+        self.legacy.write_text('unrelated legacy file')
+        self.provision()
+        self.assertEqual(self.destination.read_text(), self.original)
+        self.assertEqual(self.legacy.read_text(), 'unrelated legacy file')
+
+    def test_foreign_legacy_credentials_are_left_untouched(self):
+        self.legacy.write_text('DB_USER=snake_lab\n')
+        with self.assertRaisesRegex(RuntimeError, 'not managed by Snake Web'):
+            self.provision()
+        self.assertFalse(self.destination.exists())
+        self.assertEqual(self.legacy.read_text(), 'DB_USER=snake_lab\n')
+        self.assertEqual(self.admin.cursor.return_value.__enter__.return_value.execute.call_count, 2)
+
+    def test_socket_mismatch_does_not_copy_or_change_account(self):
+        self.legacy.write_text(self.original.replace('snake-web-test.sock', 'other.sock'))
+        with self.assertRaisesRegex(RuntimeError, 'Saved socket differs'):
+            self.provision()
+        self.assertFalse(self.destination.exists())
+        self.assertEqual(self.admin.cursor.return_value.__enter__.return_value.execute.call_count, 2)
 
 
 @unittest.skipUnless(os.environ.get('SNAKE_WEB_PROVISION_TEST_SOCKET'), 'requires isolated provisioning DB')

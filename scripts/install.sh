@@ -7,6 +7,9 @@ service_home=/var/lib/snake-web
 install_dir=/opt/prod/snake-web
 source_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 unit_path=/etc/systemd/system/snake-web.service
+config_dir=/etc/snake-web
+environment_file=${config_dir}/snake-web.env
+legacy_environment_file=/etc/snake-web.env
 
 fail() {
     printf 'Error: %s\n' "$*" >&2
@@ -21,7 +24,8 @@ Create the snake-web system account with home /var/lib/snake-web and
 install Python daemon code in /opt/prod/snake-web, owned by root, and
 enable and start snake-web.service (restart it on reinstall).
 Safe to rerun with an existing compatible account and directories.
-Provisions a dedicated local MariaDB reader and /etc/snake-lab/database.env.
+Provisions a dedicated local MariaDB reader and /etc/snake-web/database.env.
+Creates /etc/snake-web/snake-web.env; preserves existing settings on reinstall.
 Requires local MariaDB root socket access and the existing Snake Lab schema.
 Does not configure GitHub credentials. Requires Python 3 with venv support, Git, systemd, and package download access.
 EOF
@@ -49,11 +53,11 @@ code_files=(
     snake_web/interface/DbMgr.py
     snake_web/interface/GitPublisher.py
 )
-for source_file in "${code_files[@]}" requirements.txt scripts/provision-database.py systemd/snake-web.service; do
+for source_file in "${code_files[@]}" requirements.txt scripts/provision-database.py systemd/snake-web.service systemd/snake-web.env; do
     [[ -f ${source_dir}/${source_file} ]] || fail "Missing source file: ${source_file}"
 done
 
-for directory in /var/lib "${service_home}" /opt /opt/prod "${install_dir}" "${install_dir}/snake_web" "${install_dir}/snake_web/constants" "${install_dir}/snake_web/activity" "${install_dir}/snake_web/interface" "${install_dir}/venv"; do
+for directory in /etc "${config_dir}" /var/lib "${service_home}" /opt /opt/prod "${install_dir}" "${install_dir}/snake_web" "${install_dir}/snake_web/constants" "${install_dir}/snake_web/activity" "${install_dir}/snake_web/interface" "${install_dir}/venv"; do
     [[ ! -L ${directory} ]] || fail "Refusing symlink: ${directory}"
     [[ ! -e ${directory} || -d ${directory} ]] || fail "Not a directory: ${directory}"
 done
@@ -64,6 +68,13 @@ for relative in "${code_files[@]}" requirements.txt; do
 done
 [[ ! -L ${unit_path} ]] || fail "Refusing symlink: ${unit_path}"
 [[ ! -e ${unit_path} || -f ${unit_path} ]] || fail "Not a regular file: ${unit_path}"
+
+[[ ! -L ${environment_file} ]] || fail "Refusing symlink: ${environment_file}"
+[[ ! -e ${environment_file} || -f ${environment_file} ]] || fail "Not a regular file: ${environment_file}"
+if [[ ! -e ${environment_file} ]]; then
+    [[ ! -L ${legacy_environment_file} ]] || fail "Refusing symlink: ${legacy_environment_file}"
+    [[ ! -e ${legacy_environment_file} || -f ${legacy_environment_file} ]] || fail "Not a regular file: ${legacy_environment_file}"
+fi
 
 if account=$(getent passwd "${service_user}"); then
     IFS=: read -r name password uid gid comment account_home account_shell <<< "${account}"
@@ -87,6 +98,14 @@ install -d -m 0755 -o root -g root "${install_dir}"
 for relative in "${code_files[@]}" requirements.txt; do
     install -D -m 0644 -o root -g root "${source_dir}/${relative}" "${install_dir}/${relative}"
 done
+install -d -m 0700 -o root -g root "${config_dir}"
+if [[ ! -e ${environment_file} ]]; then
+    if [[ -f ${legacy_environment_file} ]]; then
+        install -m 0600 -o root -g root "${legacy_environment_file}" "${environment_file}"
+    else
+        install -m 0600 -o root -g root "${source_dir}/systemd/snake-web.env" "${environment_file}"
+    fi
+fi
 /usr/bin/python3 -m venv "${install_dir}/venv"
 "${install_dir}/venv/bin/python" -m pip install -r "${install_dir}/requirements.txt"
 "${install_dir}/venv/bin/python" "${source_dir}/scripts/provision-database.py"
@@ -98,4 +117,5 @@ systemctl is-active --quiet snake-web.service
 
 printf 'Service account ready: %s (home: %s)\n' "${service_user}" "${service_home}"
 printf 'Daemon code directory ready: %s (root:root, 0755)\n' "${install_dir}"
+printf 'Publishing configuration ready: %s (review Git settings and complete SSH setup)\n' "${environment_file}"
 printf 'snake-web.service enabled and started.\n'
