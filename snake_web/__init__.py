@@ -1,0 +1,1 @@
+"""Snake Web service."""
