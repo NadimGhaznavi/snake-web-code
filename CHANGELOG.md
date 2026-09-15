@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.4] - 2026-09-15 @ 19:52
+
 ### Changed
 
 - Install publishing defaults at `/etc/snake-web/snake-web.env`, preserving existing settings and copying the former `/etc/snake-web.env` when needed; systemd reads the new path.
