@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Event Log</title>
+  <style>
+    body { margin: 2rem auto; padding: 0 1rem; max-width: 1400px; background: #101720; color: #d5dfeb; font: 16px/1.6 "Courier New", monospace; }
+    a { color: #80bdff; } nav { margin-bottom: 1rem; }
+    .table-scroll { overflow-x: auto; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { padding: .6rem; border: 1px solid #40566e; text-align: left; vertical-align: top; }
+    th { background: #151f2b; } td { overflow-wrap: anywhere; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; padding: 1rem; background: #151f2b; }
+    img { display: block; max-width: 100%; height: auto; } .board { max-width: 500px; }
+    select, input, button { font: inherit; margin: .3rem; padding: .3rem; }
+  </style>
+  <script src="report-csv.js" defer></script>
+  <script src="event-log.js" defer></script>
+</head>
+<body data-page="list">
+  <h1 id="title">Event Log</h1>
+  <nav><a href="../">Home</a> · <a href="event-log.html">Event Log</a></nav>
+  <p id="message" role="status">Loading…</p>
+  <p>Complete published history of the five selected event types, newest first.</p>
+  <p><a href="data/events.csv">Download sanitized event history</a></p>
+  <label>Category <select id="category"><option value="">All</option></select></label>
+  <label>Event <select id="event"><option value="">All</option></select></label>
+  <label>Search <input id="search" type="search" placeholder="Message, parameter, or run ID"></label>
+  <p id="count" role="status"></p>
+  <div class="table-scroll"><table aria-label="Event log">
+    <thead><tr><th scope="col">Date / Time</th><th scope="col">ID</th><th scope="col">Level</th><th scope="col">Category</th><th scope="col">Event</th><th scope="col">Parameter</th><th scope="col">Message</th></tr></thead>
+    <tbody id="events"></tbody>
+  </table></div>
+  <button id="previous" type="button">Previous</button><button id="next" type="button">Next</button>
+  <noscript>Enable JavaScript to view the event log, or <a href="data/events.csv">download the sanitized CSV</a>.</noscript>
+</body>
+</html>

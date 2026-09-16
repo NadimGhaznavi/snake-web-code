@@ -49,6 +49,9 @@ class PublishingTests(unittest.TestCase):
         self.appdb.get_experiment_status.return_value = STATUS
         self.appdb.get_highscore_history.return_value = []
         self.appdb.get_golden_configurations.return_value = []
+        self.appdb.get_event_export_end.return_value = 0
+        self.appdb.get_public_events.return_value = []
+        self.appdb.get_public_simulations.return_value = []
         self.appdb.get_run_scores.return_value = []
         self.activity = PublishStatus(self.appdb, self.publisher)
 
@@ -160,6 +163,30 @@ class PublishingTests(unittest.TestCase):
             self.appdb.get_run_scores.return_value = [dict(id=1, high_score=5)]
             self.activity.run()
             self.assertIn('16:04:05 EDT', self.remote_page())
+
+    def test_event_log_failed_push_retries_sanitized_files_and_cursor(self):
+        self.appdb.get_event_export_end.return_value = 9
+        event = dict(event_id=5, occurred_at='2026-09-16 12:00:00',
+                     category='Conversation', name='reply_received', content=
+                     '{"choices":[{"message":{"reasoning_content":"public reason","content":"PRIVATE"}}]}')
+        self.appdb.get_public_events.side_effect = lambda after, end: [event] if after < 5 else []
+        hook = self.remote / 'hooks/pre-receive'
+        hook.write_text('#!/bin/sh\nexit 1\n')
+        hook.chmod(0o755)
+        with self.assertRaisesRegex(RuntimeError, 'Git push failed'):
+            self.activity.run()
+        head = self.git(self.repo, 'rev-parse', 'HEAD')
+        hook.unlink()
+        self.appdb.get_public_events.reset_mock()
+        self.activity.run()
+        self.appdb.get_public_events.assert_not_called()
+        self.assertEqual(head, self.git(self.remote, 'rev-parse', 'main'))
+        exported = self.git(self.remote, 'show', 'main:' + self.publisher.EVENT_HISTORY_PATH)
+        self.assertIn('public reason', exported)
+        self.assertNotIn('PRIVATE', exported)
+        self.assertIn('"through_event_id": 9', self.git(
+            self.remote, 'show', 'main:' + self.publisher.EVENT_CURSOR_PATH))
+        self.assertIn('reports/event-log.html', self.remote_page())
 
     def test_other_metrics_publish_without_a_new_all_time_highscore(self):
         self.activity.run()

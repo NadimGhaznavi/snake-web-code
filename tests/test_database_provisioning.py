@@ -69,12 +69,13 @@ class MigrationTests(unittest.TestCase):
         self.assertEqual(self.destination.read_text(), self.original)
         self.assertEqual(self.legacy.read_text(), 'unrelated legacy file')
 
-    def test_reader_gets_only_the_four_required_tables(self):
+    def test_reader_gets_only_the_five_required_tables(self):
         self.provision()
         calls = self.admin.cursor.return_value.__enter__.return_value.execute.call_args_list
         grants = [call.args[0] for call in calls if call.args[0].startswith('GRANT ')]
         self.assertEqual(set(grants), {
             'GRANT SELECT ON snakelab.simulation_runs TO %s@%s',
+            'GRANT SELECT ON snakelab.configurations TO %s@%s',
             'GRANT SELECT ON ax3l.events TO %s@%s',
             'GRANT SELECT ON ax3l.event_messages TO %s@%s',
             'GRANT SELECT ON ax3l.experiment_highscores TO %s@%s',
@@ -86,14 +87,14 @@ class MigrationTests(unittest.TestCase):
             self.provision()
         self.assertFalse(self.destination.exists())
         self.assertEqual(self.legacy.read_text(), 'DB_USER=snake_lab\n')
-        self.assertEqual(self.admin.cursor.return_value.__enter__.return_value.execute.call_count, 5)
+        self.assertEqual(self.admin.cursor.return_value.__enter__.return_value.execute.call_count, 6)
 
     def test_socket_mismatch_does_not_copy_or_change_account(self):
         self.legacy.write_text(self.original.replace('snake-web-test.sock', 'other.sock'))
         with self.assertRaisesRegex(RuntimeError, 'Saved socket differs'):
             self.provision()
         self.assertFalse(self.destination.exists())
-        self.assertEqual(self.admin.cursor.return_value.__enter__.return_value.execute.call_count, 5)
+        self.assertEqual(self.admin.cursor.return_value.__enter__.return_value.execute.call_count, 6)
 
 
 @unittest.skipUnless(os.environ.get('SNAKE_WEB_PROVISION_TEST_SOCKET'), 'requires isolated provisioning DB')
@@ -132,7 +133,7 @@ class ProvisioningTests(unittest.TestCase):
                 for sql in ('UPDATE simulation_runs SET high_score=0 WHERE id=-1',
                             'UPDATE ax3l.events SET name=name WHERE event_id=-1',
                             'UPDATE ax3l.event_messages SET content=content WHERE event_id=-1',
-                            'SELECT * FROM configurations LIMIT 0',
+                            "UPDATE configurations SET seed=seed WHERE run_id=''",
                             'SELECT * FROM mysql.user LIMIT 0'):
                     with self.assertRaises(pymysql.err.OperationalError) as denied:
                         cursor.execute(sql)
@@ -152,7 +153,7 @@ class ProvisioningTests(unittest.TestCase):
             with reader.cursor() as cursor:
                 cursor.execute('SHOW GRANTS')
                 grants = [row[0] for row in cursor.fetchall()]
-                self.assertEqual(len(grants), 4)
+                self.assertEqual(len(grants), 6)
                 self.assertTrue(any('GRANT SELECT ON `snakelab`.`simulation_runs`' in row for row in grants))
                 self.assertFalse(any('INSERT' in row for row in grants))
 

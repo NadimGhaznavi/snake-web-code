@@ -52,6 +52,12 @@ code_files=(
     snake_web/activity/PublishStatus.py
     snake_web/activity/SimulationBoard.py
     snake_web/activity/homepage.html
+    snake_web/activity/EventLogExport.py
+    snake_web/constants/PublicEvents.py
+    snake_web/activity/reports/event-log.html
+    snake_web/activity/reports/event-detail.html
+    snake_web/activity/reports/event-log.js
+    snake_web/activity/reports/report-csv.js
     snake_web/activity/GoldenHistory.py
     snake_web/activity/GoldenConfigurations.py
     snake_web/constants/ReportLabels.py

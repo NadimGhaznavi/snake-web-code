@@ -10,7 +10,7 @@ commit still needs to be pushed. It opens no listening ports.
 The host needs Python 3.10 or newer with `venv` support, Git, and systemd.
 On Debian, install `python3-venv`, `git`, and `mariadb-client` first. MariaDB
 must already be running locally with the Snake Lab schema (including
-`simulation_runs.high_score_snapshot`) and the `ax3l.events` and
+`simulation_runs.high_score_snapshot` and the v2 `configurations` table) and the `ax3l.events` and
 `ax3l.event_messages`, and `ax3l.experiment_highscores` tables installed, and root
 must be able to administer it through its Unix socket without a password. The installer creates a
 virtual environment under `/opt/prod/snake-web/venv` and installs the PyMySQL
@@ -40,7 +40,7 @@ The service starts at boot.
 
 Install and upgrade automatically create Snake Web's own MariaDB account,
 `snake_web_reader@localhost`, with a generated password and only `SELECT` on
-`snakelab.simulation_runs`, `ax3l.events`, `ax3l.event_messages`, and
+`snakelab.simulation_runs`, `snakelab.configurations`, `ax3l.events`, `ax3l.event_messages`, and
 `ax3l.experiment_highscores`. They discover the local MariaDB socket using the
 `mariadb` client and perform provisioning with local root access. They never
 reuse or modify the Snake Lab or Ax3l application accounts and never create or
@@ -90,7 +90,7 @@ Current Experiment panel. The panel shows the daemon host name, all-time high
 score, current golden configuration score, simulation count, completed experiment
 cycles, Experiment Highscores, Score Distribution Histogram, and Golden Configurations links, and the
 current golden configuration’s saved board as an inline SVG. The daemon also
-publishes all three reports’ HTML, JavaScript, and incremental CSV files.
+publishes the reports’ HTML, JavaScript, and incremental CSV files.
 Golden history includes only displayed metadata, formatted changes, and extracted
 LLM reasoning; response envelopes and tool payloads stay in the source database.
 Histogram CSV records are score observations: subsequent rows for the same run
@@ -150,3 +150,10 @@ Use only the isolated test instance: these tests create and remove the
 `snake_web_reader` account there and verify that its access is restricted. They
 write credential files only in temporary directories. They refuse to start if
 that instance already contains a `snake_web_reader` account.
+
+The Event Log additionally publishes sanitized event history and a versioned
+export cursor. Its simulation/configuration detail view requires the added
+`snakelab.configurations` SELECT grant, applied by installation and upgrade.
+Prompt content and selected response reasoning are public; response envelopes,
+choices, assistant content, and tool-call arguments are excluded before export.
+The CSV history and cursor must be kept together when restoring the site checkout.

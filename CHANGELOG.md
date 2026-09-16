@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Publish the complete sanitized Event Log with the five agreed event types, search, filters, pagination, and a homepage link.
+- Add static prompt, reasoning, simulation-run, and submitted-configuration details with Home and Event Log navigation; pretty-print prompt JSON and exclude full response/choices payloads before export.
+- Track event export progress separately from retained rows and refresh mutable simulation details, publishing data and cursor together for safe push retries.
+- Install event report assets and provision read-only access to Snake Lab configurations.
+
+### Changed
+
+- Label the homepage navigation link “Home” on all three report pages.
+
 ## [1.2.0] - 2026-09-16 @ 05:32
 
 ### Added

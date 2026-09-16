@@ -7,6 +7,7 @@ from pathlib import Path
 import socket
 from string import Template
 
+from snake_web.activity.EventLogExport import export_event_log
 from snake_web.activity.GoldenHistory import append_golden_history, read_golden_history
 from snake_web.activity.HighscoreHistory import append_history, read_history
 from snake_web.activity.RunScoreHistory import append_scores
@@ -73,6 +74,10 @@ class PublishStatus:
                 self._publisher.REPORT_PATH: report,
                 self._publisher.SCRIPT_PATH: (assets / 'experiment-highscores.js').read_text(),
             }
+            reports.update(export_event_log(self._appdb, self._publisher))
+            for path in (self._publisher.EVENT_PATH, self._publisher.EVENT_DETAIL_PATH,
+                         self._publisher.EVENT_SCRIPT_PATH, self._publisher.CSV_SCRIPT_PATH):
+                reports[path] = (assets / Path(path).name).read_text()
             previous_page = self._publisher.read_status()
             match = re.search(r'<!-- last-updated -->([^<]*)<!-- /last-updated -->', previous_page)
             previous_time = match.group(1) if match else ''

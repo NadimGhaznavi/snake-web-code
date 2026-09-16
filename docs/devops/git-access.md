@@ -99,7 +99,10 @@ generating the homepage and reports. It stages only `index.md`,
 `reports/data/experiment-highscores.csv`, `reports/score-distribution.html`,
 `reports/score-distribution.js`, `reports/data/run-scores.csv`,
 `reports/golden-configurations.html`, `reports/golden-configurations.js`, and
-`reports/data/golden-configurations.csv`, committing
+`reports/data/golden-configurations.csv`, `reports/event-log.html`,
+`reports/event-detail.html`, `reports/event-log.js`, `reports/report-csv.js`,
+`reports/data/events.csv`, `reports/data/event-simulations.csv`, and
+`reports/data/event-export.json`, committing
 all changed files together. It never
 force-pushes.
 
