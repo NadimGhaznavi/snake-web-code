@@ -26,5 +26,5 @@ and connection cleanup. It returns rows without interpreting application
 concepts such as high scores. The app does not call `DbMgr` directly.
 
 For the status publishing flow, the app obtains the high score through `AppDb`
-and uses that result to update the status page. Page generation and Git
+and uses that result to update the homepage. Page generation and Git
 publishing remain outside the DAL.

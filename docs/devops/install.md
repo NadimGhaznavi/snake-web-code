@@ -1,10 +1,10 @@
 # Install Snake Web
 
 Snake Web reads the highest recorded score across all Snake Lab simulation
-runs, updates `pages/status/index.md` in a dedicated publishing clone, and
+runs, updates `site/index.md` in a dedicated publishing clone, and
 commits and pushes the page when its content changes. It runs immediately on
 startup and then waits `DSnakeWeb.POLL_INTERVAL` seconds between checks
-(currently 300 seconds). It pushes when the score changes or a previous status
+(currently 300 seconds). It pushes when the score changes or a previous homepage
 commit still needs to be pushed. It opens no listening ports.
 
 The host needs Python 3.10 or newer with `venv` support, Git, and systemd.
@@ -24,10 +24,11 @@ systemctl status snake-web.service
 journalctl -u snake-web.service
 ```
 
-It creates the `snake-web` system account with a `nologin` shell, prepares its
+It creates the `snake-web` system account with a `/bin/bash` shell, prepares its
 home with mode `0750`, and creates the root-owned daemon code directory. On
 reinstall, it checks the existing account's home, shell, and primary group and
-preserves account data. It copies daemon code and installs, enables, and starts
+preserves account data. Existing accounts using `/usr/sbin/nologin` are migrated
+to `/bin/bash`. It copies daemon code and installs, enables, and starts
 `snake-web.service`, restarting it on reinstall. It provisions the dedicated
 Snake Web database reader; GitHub credential setup remains separate.
 
@@ -79,7 +80,7 @@ the reader account and grants.
 
 Set up the dedicated clone and SSH credentials as described in
 [Git Access](git-access.md). The configured branch must
-already contain the status page with exactly one `- Current highscore: NUMBER`
+already contain `site/index.md` with exactly one `- Current highscore: NUMBER`
 line. After configuring the service, run `sudo systemctl restart snake-web.service`
 and inspect `journalctl -u snake-web.service`. Missing configuration or publishing
 failures are logged and retried on the next interval.
