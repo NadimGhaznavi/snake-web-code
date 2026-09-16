@@ -144,7 +144,11 @@ class AppDb:
         """, (after_event_id,))
 
     def get_event_export_end(self) -> int:
-        return self._db.query("SELECT COALESCE(MAX(event_id), 0) AS event_id FROM ax3l.events")[0]['event_id']
+        # MariaDB can type this aggregate expression as DECIMAL. The application
+        # cursor is an integer, including when the event table is empty.
+        return int(self._db.query(
+            "SELECT COALESCE(MAX(event_id), 0) AS event_id FROM ax3l.events"
+        )[0]['event_id'])
 
     def get_public_events(self, after_event_id: int, through_event_id: int) -> list[dict]:
         clauses = ' OR '.join('(e.category = %s AND e.name = %s)' for _ in EVENT_LABELS)
