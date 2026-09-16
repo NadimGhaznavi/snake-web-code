@@ -9,7 +9,7 @@ import tempfile
 
 
 class GitPublisher:
-    STATUS_PATH = "site/index.md"
+    STATUS_PATH = "index.md"
 
     def __init__(self, checkout, branch="main"):
         self.checkout = Path(checkout).resolve()

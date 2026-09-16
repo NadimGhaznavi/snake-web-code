@@ -33,8 +33,7 @@ class PublishingTests(unittest.TestCase):
         self.git(self.root, 'clone', str(self.remote), str(self.repo))
         self.git(self.repo, 'config', 'user.name', 'DEV Test')
         self.git(self.repo, 'config', 'user.email', 'dev-test@example.invalid')
-        self.page = self.repo / 'site/index.md'
-        self.page.parent.mkdir(parents=True)
+        self.page = self.repo / 'index.md'
         self.page.write_text(PAGE)
         self.git(self.repo, 'add', '.')
         self.git(self.repo, 'commit', '-m', 'Fixture')
@@ -49,7 +48,7 @@ class PublishingTests(unittest.TestCase):
                               capture_output=True, text=True).stdout.strip()
 
     def remote_page(self):
-        return self.git(self.remote, 'show', 'main:site/index.md')
+        return self.git(self.remote, 'show', 'main:index.md')
 
     def test_publish_and_no_duplicate_commit(self):
         self.assertIn('published', self.activity.run())
@@ -59,7 +58,7 @@ class PublishingTests(unittest.TestCase):
             self.assertIn('unchanged', self.activity.run())
             self.assertFalse(any(call.args[0] == 'push' for call in git.call_args_list))
         self.assertEqual(head, self.git(self.remote, 'rev-parse', 'main'))
-        self.assertEqual(self.git(self.repo, 'diff-tree', '--no-commit-id', '--name-only', '-r', 'HEAD'), 'site/index.md')
+        self.assertEqual(self.git(self.repo, 'diff-tree', '--no-commit-id', '--name-only', '-r', 'HEAD'), 'index.md')
 
     def test_zero_is_a_score(self):
         self.appdb.get_current_highscore.return_value = 0
