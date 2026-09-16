@@ -36,10 +36,10 @@ class RenderingTests(unittest.TestCase):
 
     def test_metrics_plain_reports_and_real_snapshot(self):
         page = render_status(self.status, 'wintermute')
-        for text in ('Current Experiment', 'Hostname: wintermute', 'All-Time Highscore: 49',
-                     'Current Highscore: 39', 'Simulations Submitted: 190',
-                     'Experiment Cycles: 26', 'Score Distribution Histogram',
-                     'Experiment Highscores', 'Golden Configurations', 'Highscore Snapshot'):
+        for text in ('Running on: wintermute', 'All-Time Highscore: 49',
+                     'Current Highscore: 39', 'Simulations Run: 190',
+                     'Completed Experiments: 26', 'Score Distribution Histogram',
+                     'Experiment Highscores', 'Golden Configurations', 'Event Log'):
             self.assertIn(text, page)
         self.assertIn('reports/experiment-highscores.html', page)
         self.assertIn('svg', PageParser(page).tags)
