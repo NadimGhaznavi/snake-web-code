@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.6] - 2026-09-16 @ 03:28
+
 ### Fixed
 
 - Resolve the homepage as `index.md` relative to `PUBLISH_CHECKOUT`, avoiding an extra `site/` directory in the publishing path.
