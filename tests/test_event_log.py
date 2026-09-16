@@ -1,5 +1,6 @@
 """Public event boundary, bounded queries, and mutable simulation details."""
 import json
+from decimal import Decimal
 import sqlite3
 import unittest
 from unittest.mock import Mock
@@ -122,6 +123,29 @@ class EventLogTests(unittest.TestCase):
         self.db.execute('DELETE FROM ax3l.events')
         with self.assertRaisesRegex(ValueError, 'reset'):
             self.export()
+        self.assertEqual(self.files, previous)
+
+    def test_decimal_database_cursor_exports_as_integer_and_resumes(self):
+        original_query = self.appdb._db.query
+        def decimal_aggregate(sql, params=()):
+            rows = original_query(sql, params)
+            if 'COALESCE(MAX(event_id)' in sql:
+                rows[0]['event_id'] = Decimal(rows[0]['event_id'])
+            return rows
+        self.appdb = AppDb(Mock(query=decimal_aggregate))
+        self.assertIs(type(self.appdb.get_event_export_end()), int)
+        self.export()
+        self.assertEqual(json.loads(self.files[GitPublisher.EVENT_CURSOR_PATH]),
+                         {'version': 1, 'through_event_id': 0})
+        # Preserve large unsigned IDs without converting through float.
+        event_id = 9007199254740993
+        self.event(event_id, 'Configuration', 'golden_config_retained', 'Keep')
+        self.export()
+        cursor = json.loads(self.files[GitPublisher.EVENT_CURSOR_PATH])
+        self.assertIs(type(cursor['through_event_id']), int)
+        self.assertEqual(cursor['through_event_id'], event_id)
+        previous = self.files.copy()
+        self.export()
         self.assertEqual(self.files, previous)
 
     def test_prompt_images_allow_only_embedded_png(self):
