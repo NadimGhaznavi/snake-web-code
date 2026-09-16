@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.5] - 2026-09-16 @ 03:05
+
 ### Changed
 
 - Publish high-score updates to the homepage at `site/index.md`.
