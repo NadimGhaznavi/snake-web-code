@@ -9,6 +9,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-09-16 @ 06:25
+
+### Added
+
+- Add a preview-first site reset script that clears generated reports, CSV histories, and export cursors for a new production source while preserving site configuration and Git history; supports committing and retrying the reset push.
+
+
+### Starting fresh on a different production machine
+
+Run from the `snake-web-code` checkout. These commands use the default publishing
+checkout; substitute your `PUBLISH_CHECKOUT` if different and add `--branch BRANCH`
+if the publishing branch is not `main`.
+
+```bash
+# Stop the old machine's daemon before resetting the published experiment.
+sudo systemctl stop snake-web.service
+
+# Preview the files that will be reset.
+sudo -u snake-web python3 scripts/reset-site.py /var/lib/snake-web/site
+
+# Reset generated content, commit, and push to the website repository.
+sudo -u snake-web python3 scripts/reset-site.py /var/lib/snake-web/site --apply --push
+```
+
+The reset removes generated reports, CSV histories, and export cursors, and
+replaces the homepage with a waiting-for-publication placeholder. It preserves
+site configuration, `CNAME`, other pages, Git history, and source databases.
+Omit `--push` to inspect the reset commit locally first; rerun with
+`--apply --push` to publish it or retry a failed push.
+
+Keep the old daemon stopped. If that machine will remain in service, prevent
+publication from restarting after a reboot:
+
+```bash
+sudo systemctl disable snake-web.service
+```
+
+On the new machine, clone or synchronize the publishing checkout to include the
+pushed reset commit before installing/starting the daemon. The installer starts
+the service automatically. Configure it for the new source database, and do not
+restore the old CSVs or cursors. Only one machine should publish to this branch.
+
+See [Reset published experiment](docs/devops/reset-site.md) for full instructions.
+
 ## [1.3.2] - 2026-09-16 @ 06:08
 
 ### Changed
