@@ -1,4 +1,4 @@
-# Git Access
+# Service account Git access
 
 The publisher needs Git installed, write access to its checkout (including
 `.git`), a Git commit identity, and unattended SSH authentication to GitHub.
@@ -10,12 +10,48 @@ accidentally commit development work or change a developer's active branch.
 The examples below assume an account and group named `snake-web`, a home at
 `/var/lib/snake-web`, and a production clone at `/var/lib/snake-web/site`.
 The daemon code lives separately in `/opt/prod/snake-web`, owned by `root:root`
-with mode `0755`, so the service account can read and execute it.
+with mode `0755`, so the service account can read and execute it. The current
+`snake_web.server` service only waits for shutdown; publishing is not yet
+implemented.
 
-GitHub credential setup is separate from installation. Run Git and key
+## Root-run installation
+
+Run the installer from the project root:
+
+```sh
+sudo scripts/install.sh
+```
+
+It creates the `snake-web` system account with a `/bin/bash` shell, prepares its
+home with mode `0750`, and creates the root-owned daemon code directory. On
+reinstall, it checks the existing account's home, shell, and primary group and
+preserves account data. Existing accounts using `/usr/sbin/nologin` are migrated
+to `/bin/bash`. It copies daemon code and installs, enables, and starts
+`snake-web.service`, restarting it on reinstall. Python 3 and a running systemd
+system are required. It does not configure GitHub credentials.
+
+For later releases, pull the desired release into the root-managed deployment
+checkout and run `scripts/upgrade.sh` as root. The upgrade script uses this same
+installation path to update code and the unit and restart the service, while
+preserving the service account's home, credentials, and publishing clone.
+
+Run Git and key
 generation as `snake-web`, even though installation runs as root, so the account
-owns the resulting files. Complete credential setup and check access before
-enabling automated publishing.
+owns the resulting files. Complete GitHub credential setup and check access
+before enabling automated publishing.
+
+## Uninstallation
+
+Run from the project root:
+
+```sh
+sudo scripts/uninstall.sh
+```
+
+This stops and disables the service, removes its systemd unit, and removes
+`/opt/prod/snake-web` and its contents. It preserves the `snake-web`
+account and group, its home at `/var/lib/snake-web`, SSH credentials, the
+publishing clone, and the development checkout. It can be rerun after removal.
 
 ## SSH credentials
 
@@ -54,17 +90,29 @@ workflow.
 
 ## systemd settings
 
-Set `GIT_SSH_COMMAND` and `PUBLISH_CHECKOUT` in `/etc/snake-web/snake-web.env` as shown in
-[Install Snake Web](install.md). The installed unit
-sets the service account, home, and `GIT_TERMINAL_PROMPT=0`, and reads that file.
-Its working directory is `/opt/prod/snake-web`; the publisher runs Git in the
-configured publishing clone.
+When publishing is implemented, add the Git environment settings below to the
+service. Keep its working directory at `/opt/prod/snake-web` so Python can find
+the installed module, and use `git -C /var/lib/snake-web/site` for Git commands.
+The installed unit already sets the account, home, and filesystem protections;
+`StateDirectory=snake-web` makes `/var/lib/snake-web` writable by the service.
 
-`StateDirectory=snake-web` makes `/var/lib/snake-web` writable within the service's
-filesystem protections. Keep the clone there, owned by `snake-web`. A clone at
-another location also needs an appropriate systemd `ReadWritePaths` override.
-Outbound networking must allow SSH to GitHub. Restart the service after editing
-its environment file.
+```ini
+[Service]
+User=snake-web
+Group=snake-web
+WorkingDirectory=/opt/prod/snake-web
+Environment=HOME=/var/lib/snake-web
+Environment=GIT_TERMINAL_PROMPT=0
+Environment="GIT_SSH_COMMAND=ssh -i /var/lib/snake-web/.ssh/id_ed25519 -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=/var/lib/snake-web/.ssh/known_hosts"
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/snake-web/site
+```
+
+`ReadWritePaths` allows writes through systemd's filesystem protection; normal
+filesystem ownership and permissions must also allow them. Outbound networking
+must allow SSH to GitHub. Reload systemd and restart the service after updating
+its unit.
 
 If the service must share an existing checkout owned by another account, grant
 write access to both its worktree and Git directory through a shared group or
@@ -89,23 +137,3 @@ service's sandbox, and the Pages deployment end to end.
 Serialize updates to the publishing clone. Stage only the intended generated
 status files, commit when they change, and push explicitly to the publishing
 branch. Handle remote updates before retrying a rejected push; do not force-push.
-
-## Publisher behavior and recovery
-
-The publisher locks its clone, requires a clean worktree on `PUBLISH_BRANCH`,
-fetches that branch from `origin`, and fast-forwards to remote changes before
-editing the page. It preserves front matter and other content, stages only
-`site/index.md`, and commits only when that file changes. It never
-force-pushes.
-
-If a push fails, the status commit remains locally and is retried on the next
-pass, even when the score is unchanged. Pending commits are accepted only when
-each changes solely the homepage. A dirty checkout, unrelated pending commit,
-or diverged history stops that pass and logs an error. Stop the service, inspect
-and reconcile the publishing clone, then restart it. A commit failure can leave
-the generated page staged and likewise requires inspection.
-
-The project owner handles code check-ins and releases. Automated commits belong
-only to the dedicated status publishing clone; DEV tests use temporary local
-remotes. Fetch and incorporate production status commits into the release
-branches before cutting subsequent releases so the release push can succeed.
