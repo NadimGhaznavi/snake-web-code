@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.7] - 2026-09-16 @ 03:38
+
+### Changed
+
+- Regenerate the complete homepage from the current high score; require an existing `index.md` but do not validate or preserve its contents.
+
 ## [0.2.6] - 2026-09-16 @ 03:28
 
 ### Fixed

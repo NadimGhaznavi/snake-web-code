@@ -52,13 +52,36 @@ class PublishingTests(unittest.TestCase):
 
     def test_publish_and_no_duplicate_commit(self):
         self.assertIn('published', self.activity.run())
-        self.assertEqual(self.remote_page(), render_status(PAGE, 51).strip())
+        self.assertEqual(self.remote_page(), render_status(51).strip())
         head = self.git(self.remote, 'rev-parse', 'main')
         with patch.object(self.publisher, '_git', wraps=self.publisher._git) as git:
             self.assertIn('unchanged', self.activity.run())
             self.assertFalse(any(call.args[0] == 'push' for call in git.call_args_list))
         self.assertEqual(head, self.git(self.remote, 'rev-parse', 'main'))
         self.assertEqual(self.git(self.repo, 'diff-tree', '--no-commit-id', '--name-only', '-r', 'HEAD'), 'index.md')
+
+    def test_existing_contents_are_replaced(self):
+        for content in (b'', b'# Custom homepage\n',
+                        b'- Current highscore: 1\n- Current highscore: 2\n',
+                        b'\xff\xfe'):
+            with self.subTest(content=content):
+                self.page.write_bytes(content)
+                self.git(self.repo, 'add', 'index.md')
+                self.git(self.repo, 'commit', '-m', 'Replace homepage')
+                self.git(self.repo, 'push', 'origin', 'main')
+                self.activity.run()
+                self.assertEqual(self.page.read_text(), render_status(51))
+                self.assertEqual(self.remote_page(), render_status(51).strip())
+
+    def test_missing_homepage_is_not_created(self):
+        self.git(self.repo, 'rm', 'index.md')
+        self.git(self.repo, 'commit', '-m', 'Remove homepage')
+        self.git(self.repo, 'push', 'origin', 'main')
+        head = self.git(self.remote, 'rev-parse', 'main')
+        with self.assertRaisesRegex(RuntimeError, 'must be an existing file'):
+            self.activity.run()
+        self.assertFalse(self.page.exists())
+        self.assertEqual(self.git(self.remote, 'rev-parse', 'main'), head)
 
     def test_zero_is_a_score(self):
         self.appdb.get_current_highscore.return_value = 0
@@ -157,7 +180,7 @@ class PublishingTests(unittest.TestCase):
         result = subprocess.run([sys.executable, '-m', 'snake_web.server', '--once'],
                                 cwd=ROOT, env=env, capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(self.remote_page(), render_status(PAGE, score).strip())
+        self.assertEqual(self.remote_page(), render_status(score).strip())
         result = subprocess.run([sys.executable, '-m', 'snake_web.server', '--once'],
                                 cwd=ROOT, env=env, capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -165,14 +188,13 @@ class PublishingTests(unittest.TestCase):
 
 
 class RenderingTests(unittest.TestCase):
-    def test_preserves_frontmatter_and_line_endings(self):
-        content = '---\r\ntitle: Test\r\n---\r\n\r\n- Current highscore: 33\r\nOther text\r\n'
-        self.assertEqual(render_status(content, 51), content.replace(': 33', ': 51'))
+    def test_complete_page(self):
+        self.assertEqual(render_status(51), PAGE.replace(': 33', ': 51').rstrip() + '\n')
 
-    def test_missing_or_duplicate_score_rejected(self):
-        for content in ('# Empty', PAGE + '\n- Current highscore: 2\n'):
-            with self.assertRaises(ValueError):
-                render_status(content, 51)
+    def test_invalid_scores_rejected(self):
+        for score in (-1, True, None, 1.5, '51'):
+            with self.subTest(score=score), self.assertRaises(ValueError):
+                render_status(score)
 
 
 class ServiceTests(unittest.TestCase):
