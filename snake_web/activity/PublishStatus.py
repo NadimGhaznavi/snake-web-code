@@ -6,6 +6,7 @@ import socket
 from string import Template
 
 from snake_web.activity.HighscoreHistory import append_history, read_history
+from snake_web.activity.RunScoreHistory import append_scores
 from snake_web.activity.SimulationBoard import board_svg
 from snake_web.entity.ExperimentStatus import ExperimentStatus
 
@@ -48,10 +49,15 @@ class PublishStatus:
             history = read_history(existing)
             records = self._appdb.get_highscore_history(history[-1]['event_id'] if history else 0)
             csv_data = append_history(existing, records)
+            scores = append_scores(self._publisher.read_history(self._publisher.SCORES_PATH),
+                                   self._appdb.get_run_scores())
             assets = Path(__file__).parent / 'reports'
             report = (assets / 'experiment-highscores.html').read_text().replace(
                 '__TOTAL__', str(status.simulations_submitted))
             changed = self._publisher.publish(render_status(status, socket.gethostname()), {
+                self._publisher.SCORES_PATH: scores,
+                self._publisher.DISTRIBUTION_PATH: (assets / 'score-distribution.html').read_text(),
+                self._publisher.DISTRIBUTION_SCRIPT_PATH: (assets / 'score-distribution.js').read_text(),
                 self._publisher.HISTORY_PATH: csv_data,
                 self._publisher.REPORT_PATH: report,
                 self._publisher.SCRIPT_PATH: (assets / 'experiment-highscores.js').read_text(),

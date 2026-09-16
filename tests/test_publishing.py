@@ -46,6 +46,7 @@ class PublishingTests(unittest.TestCase):
         self.appdb = Mock()
         self.appdb.get_experiment_status.return_value = STATUS
         self.appdb.get_highscore_history.return_value = []
+        self.appdb.get_run_scores.return_value = []
         self.activity = PublishStatus(self.appdb, self.publisher)
 
     def git(self, directory, *args):
@@ -92,6 +93,25 @@ class PublishingTests(unittest.TestCase):
             self.activity.run()
         self.assertEqual(self.page.read_text(), PAGE)
         self.assertEqual(list(outside.iterdir()), [])
+
+    def test_histogram_update_and_failed_push_retry(self):
+        self.appdb.get_run_scores.return_value = [dict(id=1, high_score=None)]
+        self.activity.run()
+        self.appdb.get_run_scores.return_value = [dict(id=1, high_score=8), dict(id=2, high_score=0)]
+        hook = self.remote / 'hooks/pre-receive'
+        hook.write_text('#!/bin/sh\nexit 1\n')
+        hook.chmod(0o755)
+        with self.assertRaisesRegex(RuntimeError, 'Git push failed'):
+            self.activity.run()
+        head = self.git(self.repo, 'rev-parse', 'HEAD')
+        hook.unlink()
+        self.activity.run()
+        self.assertEqual(head, self.git(self.remote, 'rev-parse', 'main'))
+        self.assertEqual(self.git(self.remote, 'show', 'main:' + self.publisher.SCORES_PATH),
+                         'id,high_score\n1,\n1,8\n2,0')
+        self.assertIn('reports/score-distribution.html', self.remote_page())
+        self.assertIn('data/run-scores.csv', self.git(
+            self.remote, 'show', 'main:' + self.publisher.DISTRIBUTION_SCRIPT_PATH))
 
     def test_other_metrics_publish_without_a_new_all_time_highscore(self):
         self.activity.run()

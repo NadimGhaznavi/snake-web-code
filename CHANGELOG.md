@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-09-16 @ 05:20
+
+### Added
+
+- Publish the Score Distribution Histogram from static CSV, comparing all runs with the oldest half using shared bins, with hover and keyboard details.
+- Append observations for new runs and changed scores; histogram counts use the latest score per run, retaining unscored submissions for the cohort split.
+- Include histogram assets in installation and the existing atomic publication commit.
+
 ## [1.0.0] - 2026-09-16 @ 05:13
 
 ### Added

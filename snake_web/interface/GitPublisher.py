@@ -13,7 +13,11 @@ class GitPublisher:
     REPORT_PATH = "reports/experiment-highscores.html"
     HISTORY_PATH = "reports/data/experiment-highscores.csv"
     SCRIPT_PATH = "reports/experiment-highscores.js"
-    OWNED_PATHS = (STATUS_PATH, REPORT_PATH, HISTORY_PATH, SCRIPT_PATH)
+    DISTRIBUTION_PATH = "reports/score-distribution.html"
+    DISTRIBUTION_SCRIPT_PATH = "reports/score-distribution.js"
+    SCORES_PATH = "reports/data/run-scores.csv"
+    OWNED_PATHS = (STATUS_PATH, REPORT_PATH, HISTORY_PATH, SCRIPT_PATH,
+                   DISTRIBUTION_PATH, DISTRIBUTION_SCRIPT_PATH, SCORES_PATH)
 
     def __init__(self, checkout, branch="main"):
         self.checkout = Path(checkout).resolve()
@@ -69,8 +73,8 @@ class GitPublisher:
         self._git("ls-files", "--error-unmatch", "--", self.STATUS_PATH)
         return path
 
-    def read_history(self):
-        path = self._managed_file(self.HISTORY_PATH)
+    def read_history(self, name=None):
+        path = self._managed_file(name or self.HISTORY_PATH)
         return path.read_text() if path.exists() else ''
 
     def _managed_file(self, name):

@@ -53,6 +53,9 @@ code_files=(
     snake_web/activity/SimulationBoard.py
     snake_web/activity/homepage.html
     snake_web/activity/HighscoreHistory.py
+    snake_web/activity/RunScoreHistory.py
+    snake_web/activity/reports/score-distribution.html
+    snake_web/activity/reports/score-distribution.js
     snake_web/activity/reports/experiment-highscores.html
     snake_web/activity/reports/experiment-highscores.js
     snake_web/entity/ExperimentStatus.py
