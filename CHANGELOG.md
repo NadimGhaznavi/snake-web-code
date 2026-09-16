@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-09-16 @ 06:25
+
 ### Added
 
 - Add a preview-first site reset script that clears generated reports, CSV histories, and export cursors for a new production source while preserving site configuration and Git history; supports committing and retrying the reset push.
