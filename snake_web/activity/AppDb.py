@@ -90,3 +90,11 @@ class AppDb:
             experiment_cycles=completed_cycles(comparisons),
             snapshot=current[0]['high_score_snapshot'] if current else None,
         )
+
+    def get_highscore_history(self, after_event_id: int) -> list[dict]:
+        """Accepted scores in decision order, including lower seed baselines."""
+        return self._db.query("""
+            SELECT event_id, simulations, score, seed
+            FROM ax3l.experiment_highscores
+            WHERE event_id > %s ORDER BY event_id
+        """, (after_event_id,))

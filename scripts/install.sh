@@ -52,6 +52,9 @@ code_files=(
     snake_web/activity/PublishStatus.py
     snake_web/activity/SimulationBoard.py
     snake_web/activity/homepage.html
+    snake_web/activity/HighscoreHistory.py
+    snake_web/activity/reports/experiment-highscores.html
+    snake_web/activity/reports/experiment-highscores.js
     snake_web/entity/ExperimentStatus.py
     snake_web/interface/DbMgr.py
     snake_web/interface/GitPublisher.py
@@ -60,7 +63,7 @@ for source_file in "${code_files[@]}" requirements.txt scripts/provision-databas
     [[ -f ${source_dir}/${source_file} ]] || fail "Missing source file: ${source_file}"
 done
 
-for directory in /etc "${config_dir}" /var/lib "${service_home}" /opt /opt/prod "${install_dir}" "${install_dir}/snake_web" "${install_dir}/snake_web/constants" "${install_dir}/snake_web/activity" "${install_dir}/snake_web/entity" "${install_dir}/snake_web/interface" "${install_dir}/venv"; do
+for directory in /etc "${config_dir}" /var/lib "${service_home}" /opt /opt/prod "${install_dir}" "${install_dir}/snake_web" "${install_dir}/snake_web/constants" "${install_dir}/snake_web/activity" "${install_dir}/snake_web/activity/reports" "${install_dir}/snake_web/entity" "${install_dir}/snake_web/interface" "${install_dir}/venv"; do
     [[ ! -L ${directory} ]] || fail "Refusing symlink: ${directory}"
     [[ ! -e ${directory} || -d ${directory} ]] || fail "Not a directory: ${directory}"
 done

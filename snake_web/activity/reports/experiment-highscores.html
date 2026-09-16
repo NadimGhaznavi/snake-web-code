@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Experiment Highscores</title>
+  <style>
+    body { margin: 2rem auto; padding: 0 1rem; max-width: 1200px; background: #101720; color: #d5dfeb; font: 16px/1.6 "Courier New", monospace; }
+    a { color: #80bdff; }
+    svg { display: block; width: 100%; background: #151f2b; }
+    circle:focus { outline: none; stroke: white; stroke-width: 3; }
+    #detail { min-height: 3em; }
+  </style>
+  <script src="experiment-highscores.js" defer></script>
+</head>
+<body>
+  <h1>Experiment Highscores</h1>
+  <a href="../">Back to experiment</a>
+  <p>Simulations submitted: <span id="total">__TOTAL__</span>.
+    The line shows the accepted configuration’s score. Failed candidates leave it unchanged;
+    seed changes may lower it. Hover over or focus a point for details.</p>
+  <p><a href="data/experiment-highscores.csv">Download CSV history</a></p>
+  <p id="message" role="status">Loading score history…</p>
+  <svg id="chart" viewBox="0 0 1000 500" role="img" aria-label="Accepted configuration score by simulation count" hidden></svg>
+  <p id="detail" aria-live="polite"></p>
+  <noscript>Enable JavaScript to view the plot, or download the CSV history.</noscript>
+</body>
+</html>

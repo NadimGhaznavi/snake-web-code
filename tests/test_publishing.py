@@ -45,6 +45,7 @@ class PublishingTests(unittest.TestCase):
         self.publisher = GitPublisher(self.repo)
         self.appdb = Mock()
         self.appdb.get_experiment_status.return_value = STATUS
+        self.appdb.get_highscore_history.return_value = []
         self.activity = PublishStatus(self.appdb, self.publisher)
 
     def git(self, directory, *args):
@@ -62,7 +63,35 @@ class PublishingTests(unittest.TestCase):
             self.assertIn('unchanged', self.activity.run())
             self.assertFalse(any(call.args[0] == 'push' for call in git.call_args_list))
         self.assertEqual(head, self.git(self.remote, 'rev-parse', 'main'))
-        self.assertEqual(self.git(self.repo, 'diff-tree', '--no-commit-id', '--name-only', '-r', 'HEAD'), 'index.md')
+        self.assertEqual(self.git(self.repo, 'diff-tree', '--no-commit-id', '--name-only', '-r', 'HEAD').splitlines(), sorted(self.publisher.OWNED_PATHS))
+
+    def test_history_appends_and_preserves_lower_seed_baselines(self):
+        self.appdb.get_highscore_history.return_value = [
+            dict(event_id=10, simulations=2, score=51, seed=7)]
+        self.activity.run()
+        first = (self.repo / self.publisher.HISTORY_PATH).read_text()
+        self.appdb.get_highscore_history.assert_called_with(0)
+        self.appdb.get_highscore_history.return_value = [
+            dict(event_id=20, simulations=5, score=12, seed=8)]
+        self.activity.run()
+        self.appdb.get_highscore_history.assert_called_with(10)
+        data = self.git(self.remote, 'show', 'main:' + self.publisher.HISTORY_PATH)
+        self.assertEqual(data, first + '20,5,12,8')
+        self.appdb.get_highscore_history.return_value = []
+        self.assertIn('unchanged', self.activity.run())
+        self.appdb.get_highscore_history.assert_called_with(20)
+
+    def test_report_paths_refuse_symlinks_before_homepage_changes(self):
+        outside = self.root / 'outside'
+        outside.mkdir()
+        (self.repo / 'reports').symlink_to(outside, target_is_directory=True)
+        self.git(self.repo, 'add', 'reports')
+        self.git(self.repo, 'commit', '-m', 'Symlink report directory')
+        self.git(self.repo, 'push', 'origin', 'main')
+        with self.assertRaisesRegex(RuntimeError, 'without symlinks'):
+            self.activity.run()
+        self.assertEqual(self.page.read_text(), PAGE)
+        self.assertEqual(list(outside.iterdir()), [])
 
     def test_other_metrics_publish_without_a_new_all_time_highscore(self):
         self.activity.run()

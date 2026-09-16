@@ -62,6 +62,7 @@ def provision(admin, socket_path, credentials=CREDENTIALS, legacy_credentials=No
             cursor.execute('SELECT high_score, high_score_snapshot FROM snakelab.simulation_runs LIMIT 0')
             cursor.execute('SELECT event_id, occurred_at, category, name, process_id FROM ax3l.events LIMIT 0')
             cursor.execute('SELECT event_id, content FROM ax3l.event_messages LIMIT 0')
+            cursor.execute('SELECT event_id, simulations, score, seed FROM ax3l.experiment_highscores LIMIT 0')
             cursor.execute('SELECT COUNT(*) FROM mysql.user WHERE User=%s AND Host=%s', (DB_USER, 'localhost'))
             account_exists = cursor.fetchone()[0] != 0
             if credentials.exists() or credentials.is_symlink():
@@ -94,7 +95,7 @@ def provision(admin, socket_path, credentials=CREDENTIALS, legacy_credentials=No
             cursor.execute('ALTER USER %s@%s IDENTIFIED BY %s',
                            (DB_USER, 'localhost', values['DB_PASSWORD']))
             cursor.execute('REVOKE ALL PRIVILEGES, GRANT OPTION FROM %s@%s', (DB_USER, 'localhost'))
-            for table in ('snakelab.simulation_runs', 'ax3l.events', 'ax3l.event_messages'):
+            for table in ('snakelab.simulation_runs', 'ax3l.events', 'ax3l.event_messages', 'ax3l.experiment_highscores'):
                 cursor.execute(f'GRANT SELECT ON {table} TO %s@%s', (DB_USER, 'localhost'))
         with pymysql.connect(unix_socket=socket_path, user=DB_USER, password=values['DB_PASSWORD'],
                              database=DB_NAME, connect_timeout=10) as reader:

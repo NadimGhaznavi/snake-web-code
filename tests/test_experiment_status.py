@@ -41,7 +41,7 @@ class RenderingTests(unittest.TestCase):
                      'Experiment Cycles: 26', 'Score Distribution Histogram',
                      'Experiment Highscores', 'Golden Configurations', 'Highscore Snapshot'):
             self.assertIn(text, page)
-        self.assertNotIn('a', PageParser(page).tags)
+        self.assertIn('reports/experiment-highscores.html', page)
         self.assertIn('svg', PageParser(page).tags)
         self.assertTrue(page.startswith('---\n'))
         self.assertIn('layout: single', page)
