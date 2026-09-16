@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-09-16 @ 05:32
+
+### Added
+
+- Show Last Updated in the daemon’s local timezone at the bottom of the homepage; preserve the timestamp on unchanged polling passes and push retries.
+
+### Removed
+
+- Remove GoatCounter tracking and the visitor count from the homepage.
+
+### Added
+
+- Publish Golden Configurations from incremental CSV with timestamps, run IDs, scores, parameter changes, and expandable LLM reasoning.
+- Sanitize golden history before export: retain only displayed fields and first-choice reasoning, excluding full response and tool payloads.
+- Install and publish golden report assets with the other reports and link the table from the homepage.
+
 ## [1.1.1] - 2026-09-16 @ 05:23
 
 ### Added

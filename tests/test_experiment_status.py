@@ -56,7 +56,7 @@ class RenderingTests(unittest.TestCase):
 
     def test_hostnames_are_escaped_for_html_and_liquid(self):
         page = render_status(self.status, '<script>{{ variable }}{% include secret %}</script>')
-        self.assertEqual(PageParser(page).tags.count('script'), 1)
+        self.assertNotIn('script', PageParser(page).tags)
         self.assertNotIn('{{', page)
         self.assertNotIn('{%', page)
         self.assertIn('&lt;script&gt;', page)

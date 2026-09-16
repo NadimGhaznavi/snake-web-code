@@ -2,6 +2,8 @@
 
 import fcntl
 import socket
+import re
+from datetime import datetime, timedelta, timezone
 from dataclasses import replace
 import os
 from pathlib import Path
@@ -46,6 +48,7 @@ class PublishingTests(unittest.TestCase):
         self.appdb = Mock()
         self.appdb.get_experiment_status.return_value = STATUS
         self.appdb.get_highscore_history.return_value = []
+        self.appdb.get_golden_configurations.return_value = []
         self.appdb.get_run_scores.return_value = []
         self.activity = PublishStatus(self.appdb, self.publisher)
 
@@ -53,12 +56,17 @@ class PublishingTests(unittest.TestCase):
         return subprocess.run(['git', '-C', str(directory), *args], check=True,
                               capture_output=True, text=True).stdout.strip()
 
+    def expected_page(self, status):
+        page = self.page.read_text()
+        match = re.search(r'<!-- last-updated -->([^<]*)<!-- /last-updated -->', page)
+        return render_status(status, socket.gethostname(), match.group(1) if match else '')
+
     def remote_page(self):
         return self.git(self.remote, 'show', 'main:index.md')
 
     def test_publish_and_no_duplicate_commit(self):
         self.assertIn('published', self.activity.run())
-        self.assertEqual(self.remote_page(), render_status(STATUS, socket.gethostname()).strip())
+        self.assertEqual(self.remote_page(), self.expected_page(STATUS).strip())
         head = self.git(self.remote, 'rev-parse', 'main')
         with patch.object(self.publisher, '_git', wraps=self.publisher._git) as git:
             self.assertIn('unchanged', self.activity.run())
@@ -113,6 +121,46 @@ class PublishingTests(unittest.TestCase):
         self.assertIn('data/run-scores.csv', self.git(
             self.remote, 'show', 'main:' + self.publisher.DISTRIBUTION_SCRIPT_PATH))
 
+    def test_golden_history_incremental_retry(self):
+        self.appdb.get_golden_configurations.return_value = [dict(
+            event_id=10, occurred_at='2026-09-16 12:00:00', process_id='baseline', high_score=0)]
+        self.activity.run()
+        self.appdb.get_golden_configurations.assert_called_with(0)
+        original = (self.repo / self.publisher.GOLDEN_HISTORY_PATH).read_text()
+        self.appdb.get_golden_configurations.return_value = [dict(
+            event_id=20, occurred_at='2026-09-16 13:00:00', process_id='winner', high_score=8)]
+        hook = self.remote / 'hooks/pre-receive'
+        hook.write_text('#!/bin/sh\nexit 1\n')
+        hook.chmod(0o755)
+        with self.assertRaisesRegex(RuntimeError, 'Git push failed'):
+            self.activity.run()
+        self.appdb.get_golden_configurations.assert_called_with(10)
+        head = self.git(self.repo, 'rev-parse', 'HEAD')
+        self.appdb.get_golden_configurations.return_value = []
+        hook.unlink()
+        self.activity.run()
+        self.appdb.get_golden_configurations.assert_called_with(20)
+        self.assertEqual(head, self.git(self.remote, 'rev-parse', 'main'))
+        self.assertEqual((self.repo / self.publisher.GOLDEN_HISTORY_PATH).read_text(),
+                         original + '20,2026-09-16 13:00:00,winner,8,,,\n')
+        self.assertIn('reports/golden-configurations.html', self.remote_page())
+
+    def test_last_updated_uses_local_time_and_changes_only_with_content(self):
+        clock = Mock()
+        clock.now.return_value.astimezone.return_value = datetime(
+            2026, 9, 16, 15, 4, 5, tzinfo=timezone(timedelta(hours=-4), 'EDT'))
+        with patch('snake_web.activity.PublishStatus.datetime', clock):
+            self.activity.run()
+            self.assertIn('Last Updated: <!-- last-updated -->2026-09-16 15:04:05 EDT (-0400)',
+                          self.remote_page())
+            clock.now.return_value.astimezone.return_value = datetime(
+                2026, 9, 16, 16, 4, 5, tzinfo=timezone(timedelta(hours=-4), 'EDT'))
+            self.assertIn('unchanged', self.activity.run())
+            self.assertIn('15:04:05 EDT', self.remote_page())
+            self.appdb.get_run_scores.return_value = [dict(id=1, high_score=5)]
+            self.activity.run()
+            self.assertIn('16:04:05 EDT', self.remote_page())
+
     def test_other_metrics_publish_without_a_new_all_time_highscore(self):
         self.activity.run()
         head = self.git(self.remote, 'rev-parse', 'main')
@@ -133,8 +181,8 @@ class PublishingTests(unittest.TestCase):
                 self.git(self.repo, 'commit', '-m', 'Replace homepage')
                 self.git(self.repo, 'push', 'origin', 'main')
                 self.activity.run()
-                self.assertEqual(self.page.read_text(), render_status(STATUS, socket.gethostname()))
-                self.assertEqual(self.remote_page(), render_status(STATUS, socket.gethostname()).strip())
+                self.assertEqual(self.page.read_text(), self.expected_page(STATUS))
+                self.assertEqual(self.remote_page(), self.expected_page(STATUS).strip())
 
     def test_missing_homepage_is_not_created(self):
         self.git(self.repo, 'rm', 'index.md')
@@ -244,7 +292,7 @@ class PublishingTests(unittest.TestCase):
         result = subprocess.run([sys.executable, '-m', 'snake_web.server', '--once'],
                                 cwd=ROOT, env=env, capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(self.remote_page(), render_status(status, socket.gethostname()).strip())
+        self.assertEqual(self.remote_page(), self.expected_page(status).strip())
         result = subprocess.run([sys.executable, '-m', 'snake_web.server', '--once'],
                                 cwd=ROOT, env=env, capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)

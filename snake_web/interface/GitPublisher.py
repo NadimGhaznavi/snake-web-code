@@ -16,8 +16,12 @@ class GitPublisher:
     DISTRIBUTION_PATH = "reports/score-distribution.html"
     DISTRIBUTION_SCRIPT_PATH = "reports/score-distribution.js"
     SCORES_PATH = "reports/data/run-scores.csv"
+    GOLDEN_PATH = "reports/golden-configurations.html"
+    GOLDEN_SCRIPT_PATH = "reports/golden-configurations.js"
+    GOLDEN_HISTORY_PATH = "reports/data/golden-configurations.csv"
     OWNED_PATHS = (STATUS_PATH, REPORT_PATH, HISTORY_PATH, SCRIPT_PATH,
-                   DISTRIBUTION_PATH, DISTRIBUTION_SCRIPT_PATH, SCORES_PATH)
+                   DISTRIBUTION_PATH, DISTRIBUTION_SCRIPT_PATH, SCORES_PATH,
+                   GOLDEN_PATH, GOLDEN_SCRIPT_PATH, GOLDEN_HISTORY_PATH)
 
     def __init__(self, checkout, branch="main"):
         self.checkout = Path(checkout).resolve()
@@ -72,6 +76,9 @@ class GitPublisher:
             raise RuntimeError("Homepage must be an existing file without symlinks")
         self._git("ls-files", "--error-unmatch", "--", self.STATUS_PATH)
         return path
+
+    def read_status(self):
+        return self._status_file().read_text(encoding='utf-8', errors='replace')
 
     def read_history(self, name=None):
         path = self._managed_file(name or self.HISTORY_PATH)
