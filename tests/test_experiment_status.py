@@ -3,6 +3,9 @@
 from dataclasses import replace
 from html.parser import HTMLParser
 import json
+import os
+
+import pymysql
 import sqlite3
 import unittest
 from xml.etree import ElementTree
@@ -101,7 +104,7 @@ class ExperimentQueryTests(unittest.TestCase):
         self.app = AppDb(self)
 
     def query(self, sql, params=None):
-        return [dict(row) for row in self.db.execute(sql, params or ())]
+        return [dict(row) for row in self.db.execute(sql.replace('%s', '?'), params or ())]
 
     def event(self, name, process_id=None, content='{}', category='Configuration'):
         cursor = self.db.execute('INSERT INTO ax3l.events (occurred_at, category, name, process_id) '
@@ -154,3 +157,46 @@ class ExperimentQueryTests(unittest.TestCase):
                 {'process_id': 'a', 'content': json.dumps({'parameter_order': ['one'], 'index': 0})},
                 {'process_id': 'b', 'content': json.dumps({'parameter_order': ['two'], 'index': 0})},
             ])
+
+
+@unittest.skipUnless(os.environ.get('SNAKE_WEB_TEST_DB_SOCKET'), 'requires isolated DEV MariaDB')
+class CollationTests(unittest.TestCase):
+    def test_golden_lookup_across_different_schema_collations(self):
+        socket = os.environ['SNAKE_WEB_TEST_DB_SOCKET']
+        self.assertTrue(socket.startswith('/tmp/snake-web-'), 'Use an isolated test database')
+        connection = pymysql.connect(unix_socket=socket, user='root', database='snakelab',
+                                     cursorclass=pymysql.cursors.DictCursor, autocommit=True)
+        self.addCleanup(connection.close)
+        # Temporary tables shadow the fixture tables only on this connection.
+        with connection.cursor() as cursor:
+            cursor.execute("""CREATE TEMPORARY TABLE simulation_runs (
+                run_id CHAR(36), high_score INT, high_score_snapshot JSON
+            ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci""")
+            cursor.execute("""CREATE TEMPORARY TABLE ax3l.events (
+                event_id INT PRIMARY KEY, occurred_at DATETIME, category VARCHAR(50),
+                name VARCHAR(100), process_id CHAR(36)
+            ) CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci""")
+            cursor.execute("""CREATE TEMPORARY TABLE ax3l.event_messages (
+                event_id INT PRIMARY KEY, content TEXT
+            ) CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci""")
+            cursor.execute("INSERT INTO simulation_runs VALUES ('record', 49, NULL), ('golden', 39, %s)",
+                           (json.dumps(SNAPSHOT),))
+            cursor.execute("""INSERT INTO ax3l.events VALUES
+                (1, '2026-09-16', 'Configuration', 'golden_config_created', 'golden')""")
+            cursor.execute("INSERT INTO ax3l.event_messages VALUES (1, '{}')")
+            # Reproduce the deployment failure to ensure this fixture covers it.
+            with self.assertRaises(pymysql.err.OperationalError) as error:
+                cursor.execute("""SELECT r.high_score FROM simulation_runs r
+                    WHERE r.run_id = (SELECT process_id FROM ax3l.events LIMIT 1)""")
+            self.assertEqual(error.exception.args[0], 1267)
+
+        class Database:
+            def query(self, sql, params=None):
+                with connection.cursor() as cursor:
+                    cursor.execute(sql, params)
+                    return list(cursor.fetchall())
+
+        result = AppDb(Database()).get_experiment_status()
+        self.assertEqual(result.all_time_highscore, 49)
+        self.assertEqual(result.current_highscore, 39)
+        self.assertEqual(json.loads(result.snapshot), SNAPSHOT)

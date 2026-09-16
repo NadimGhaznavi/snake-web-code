@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Look up the golden run using a parameterized ID instead of comparing text columns across the Snake Lab and Ax3l schemas, avoiding their current collation mismatch without altering either schema.
+
 ## [0.2.8] - 2026-09-16 @ 03:57
 
 ### Added
