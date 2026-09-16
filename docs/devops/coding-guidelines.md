@@ -1,5 +1,24 @@
 # Coding Guidelines
 
+## Ecosystem Consistency
+
+Snake Web, Snake Lab, and Ax3l are parts of one ecosystem under shared
+ownership. Keep their infrastructure and interfaces consistent so each project
+can use clean, concise code.
+
+When an issue reveals an inconsistency between projects—such as database schema
+or collation settings, module interfaces, or message handling—stop the affected
+work and alert the project owner before implementing a workaround. Explain the
+mismatch and its impact so the owner can decide whether to fix the shared
+contract or authorize a temporary deployment fix.
+
+Preserve running experiments and their data. Experiments can run for weeks or
+months; do not wipe or reset them to resolve an inconsistency without explicit
+authorization. Document any approved temporary workaround and the upstream
+standard that needs revisiting.
+
+## Code Organization
+
 Organize classes by responsibility within `snake_web`:
 
 - **`entity/`** — Entity classes house data.
