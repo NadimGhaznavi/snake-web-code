@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Label the homepage navigation link “Home” on all three report pages.
+
 ## [1.2.0] - 2026-09-16 @ 05:32
 
 ### Added
