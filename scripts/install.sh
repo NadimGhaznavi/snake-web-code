@@ -52,6 +52,11 @@ code_files=(
     snake_web/activity/PublishStatus.py
     snake_web/activity/SimulationBoard.py
     snake_web/activity/homepage.html
+    snake_web/activity/GoldenHistory.py
+    snake_web/activity/GoldenConfigurations.py
+    snake_web/constants/ReportLabels.py
+    snake_web/activity/reports/golden-configurations.html
+    snake_web/activity/reports/golden-configurations.js
     snake_web/activity/HighscoreHistory.py
     snake_web/activity/RunScoreHistory.py
     snake_web/activity/reports/score-distribution.html

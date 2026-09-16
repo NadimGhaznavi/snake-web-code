@@ -88,9 +88,11 @@ as a tracked file. Its existing contents may be empty or arbitrary: the daemon
 replaces the complete page with generated Jekyll front matter and a responsive
 Current Experiment panel. The panel shows the daemon host name, all-time high
 score, current golden configuration score, simulation count, completed experiment
-cycles, Experiment Highscores and Score Distribution Histogram links, one future report name, and the
+cycles, Experiment Highscores, Score Distribution Histogram, and Golden Configurations links, and the
 current golden configuration’s saved board as an inline SVG. The daemon also
-publishes both reports’ HTML, JavaScript, and incremental numeric CSV files.
+publishes all three reports’ HTML, JavaScript, and incremental CSV files.
+Golden history includes only displayed metadata, formatted changes, and extracted
+LLM reasoning; response envelopes and tool payloads stay in the source database.
 Histogram CSV records are score observations: subsequent rows for the same run
 update its score. The browser counts each run once using its latest observation.
 
