@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-09-16 @ 05:32
+
 ### Added
 
 - Show Last Updated in the daemon’s local timezone at the bottom of the homepage; preserve the timestamp on unchanged polling passes and push retries.

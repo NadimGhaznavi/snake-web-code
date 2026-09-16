@@ -2,5 +2,5 @@ from typing import Final
 
 
 class DSnakeWeb:
-    VERSION: Final[str] = "1.1.1"
+    VERSION: Final[str] = "1.2.0"
     POLL_INTERVAL: Final[int] = 300
