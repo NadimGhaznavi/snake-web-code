@@ -56,16 +56,18 @@ class AppDb:
         """)[0]
         # Match the report server's latest golden creation, not the newest run
         # or the all-time winner (which may belong to an earlier seed).
-        current = self._db.query("""
-            SELECT r.high_score, r.high_score_snapshot
-            FROM simulation_runs r
-            WHERE r.run_id = (
-                SELECT e.process_id FROM ax3l.events e
-                JOIN ax3l.event_messages m USING (event_id)
-                WHERE e.category = 'Configuration' AND e.name = 'golden_config_created'
-                ORDER BY e.occurred_at DESC, e.event_id DESC LIMIT 1
-            )
+        golden = self._db.query("""
+            SELECT e.process_id FROM ax3l.events e
+            JOIN ax3l.event_messages m USING (event_id)
+            WHERE e.category = 'Configuration' AND e.name = 'golden_config_created'
+            ORDER BY e.occurred_at DESC, e.event_id DESC LIMIT 1
         """)
+        # Pass the ID as a value: the two schemas currently use different
+        # collations, so comparing their text columns directly fails.
+        current = self._db.query(
+            "SELECT high_score, high_score_snapshot FROM simulation_runs WHERE run_id = %s",
+            (golden[0]['process_id'],),
+        ) if golden else []
         comparisons = self._db.query("""
             SELECT c.process_id, m.content
             FROM ax3l.events c
