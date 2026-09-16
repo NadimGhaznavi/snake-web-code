@@ -109,3 +109,6 @@ new export; a cursor ahead of the source is rejected. Changes to sanitization
 rules do not retroactively remove data from previously published files or Git
 history. Browser pagination limits rendered rows; it still downloads the complete
 CSV history. No live database-backed report service is required.
+
+To start fresh against a different source database, use the
+[site reset script](docs/devops/reset-site.md) to clear published data and cursors.
