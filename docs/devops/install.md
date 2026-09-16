@@ -1,7 +1,7 @@
 # Install Snake Web
 
-Snake Web reads the highest recorded score across all Snake Lab simulation
-runs, updates `index.md` at the root of the dedicated publishing clone, and
+Snake Web reads Snake Lab simulations and Ax3l experiment events, generates
+`index.md` at the root of the dedicated publishing clone, and
 commits and pushes the page when its content changes. It runs immediately on
 startup and then waits `DSnakeWeb.POLL_INTERVAL` seconds between checks
 (currently 300 seconds). It pushes when the generated page changes or a previous homepage
@@ -9,7 +9,9 @@ commit still needs to be pushed. It opens no listening ports.
 
 The host needs Python 3.10 or newer with `venv` support, Git, and systemd.
 On Debian, install `python3-venv`, `git`, and `mariadb-client` first. MariaDB
-must already be running locally with the Snake Lab schema installed, and root
+must already be running locally with the Snake Lab schema (including
+`simulation_runs.high_score_snapshot`) and the `ax3l.events` and
+`ax3l.event_messages` tables installed, and root
 must be able to administer it through its Unix socket without a password. The installer creates a
 virtual environment under `/opt/prod/snake-web/venv` and installs the PyMySQL
 dependency from `requirements.txt`; this requires package download access.
@@ -38,7 +40,7 @@ The service starts at boot.
 
 Install and upgrade automatically create Snake Web's own MariaDB account,
 `snake_web_reader@localhost`, with a generated password and only `SELECT` on
-`snakelab.simulation_runs`. They discover the local MariaDB socket using the
+`snakelab.simulation_runs`, `ax3l.events`, and `ax3l.event_messages`. They discover the local MariaDB socket using the
 `mariadb` client and perform provisioning with local root access. They never
 reuse or modify the Snake Lab or Ax3l application accounts and never create or
 migrate the source database schema.
@@ -82,8 +84,22 @@ Set up the dedicated clone and SSH credentials as described in
 [Git Access](git-access.md). The configured branch must
 already contain `index.md` at its root (normally `/var/lib/snake-web/site/index.md`)
 as a tracked file. Its existing contents may be empty or arbitrary: the daemon
-replaces the complete page with generated Jekyll front matter, an Experiment
-Status heading, and the current high score. After configuring the service, run `sudo systemctl restart snake-web.service`
+replaces the complete page with generated Jekyll front matter and a responsive
+Current Experiment panel. The panel shows the daemon host name, all-time high
+score, current golden configuration score, simulation count, completed experiment
+cycles, three report names as plain text, and the current golden configuration’s
+saved board as an inline SVG. No extra website assets are required.
+
+All-time high score and simulation count cover every `simulation_runs` row.
+The current score and snapshot come from the run referenced by the latest
+`golden_config_created` event, matching the report server. Cycles count completed
+ordered round-robin passes from Ax3l checkpoints and comparisons, ignoring
+duplicate comparisons and incomplete passes. Missing current scores display
+`—`; missing or invalid boards display an explanatory message. The page is
+published when any displayed content changes, even if the all-time score does
+not. Upgrading adds the two event-table SELECT grants to the existing reader.
+
+After configuring the service, run `sudo systemctl restart snake-web.service`
 and inspect `journalctl -u snake-web.service`. Missing configuration or publishing
 failures are logged and retried on the next interval.
 
@@ -101,7 +117,8 @@ python3 -m venv .venv
 
 The Git tests create temporary repositories and local bare remotes. To also
 exercise the real DAL and one-shot command, restore the supplied Snake Lab dump
-into an isolated MariaDB instance, then run:
+into an isolated MariaDB instance, including the Snake Lab snapshot column
+and Ax3l event tables, then run:
 
 ```sh
 SNAKE_WEB_TEST_DB_SOCKET=/tmp/snake-web-slice-db.sock \

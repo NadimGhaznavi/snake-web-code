@@ -59,7 +59,9 @@ def provision(admin, socket_path, credentials=CREDENTIALS, legacy_credentials=No
         fcntl.flock(lock, fcntl.LOCK_EX)
         with admin.cursor() as cursor:
             # Require the source schema to exist; never install Snake Lab's schema here.
-            cursor.execute('SELECT high_score FROM snakelab.simulation_runs LIMIT 0')
+            cursor.execute('SELECT high_score, high_score_snapshot FROM snakelab.simulation_runs LIMIT 0')
+            cursor.execute('SELECT event_id, occurred_at, category, name, process_id FROM ax3l.events LIMIT 0')
+            cursor.execute('SELECT event_id, content FROM ax3l.event_messages LIMIT 0')
             cursor.execute('SELECT COUNT(*) FROM mysql.user WHERE User=%s AND Host=%s', (DB_USER, 'localhost'))
             account_exists = cursor.fetchone()[0] != 0
             if credentials.exists() or credentials.is_symlink():
@@ -92,12 +94,15 @@ def provision(admin, socket_path, credentials=CREDENTIALS, legacy_credentials=No
             cursor.execute('ALTER USER %s@%s IDENTIFIED BY %s',
                            (DB_USER, 'localhost', values['DB_PASSWORD']))
             cursor.execute('REVOKE ALL PRIVILEGES, GRANT OPTION FROM %s@%s', (DB_USER, 'localhost'))
-            cursor.execute('GRANT SELECT ON snakelab.simulation_runs TO %s@%s', (DB_USER, 'localhost'))
+            for table in ('snakelab.simulation_runs', 'ax3l.events', 'ax3l.event_messages'):
+                cursor.execute(f'GRANT SELECT ON {table} TO %s@%s', (DB_USER, 'localhost'))
         with pymysql.connect(unix_socket=socket_path, user=DB_USER, password=values['DB_PASSWORD'],
                              database=DB_NAME, connect_timeout=10) as reader:
             with reader.cursor() as cursor:
                 cursor.execute('SELECT MAX(high_score) FROM simulation_runs')
                 cursor.fetchone()
+                cursor.execute('SELECT event_id FROM ax3l.events LIMIT 0')
+                cursor.execute('SELECT event_id FROM ax3l.event_messages LIMIT 0')
 
 
 def main():
@@ -115,7 +120,7 @@ def main():
                              connect_timeout=10, read_timeout=30, write_timeout=30) as admin:
             provision(admin, socket_path, legacy_credentials=LEGACY_CREDENTIALS)
     except pymysql.MySQLError as exc:
-        print(f'Database provisioning failed (MariaDB error {exc.args[0]}). Check local root access and Snake Lab schema.', file=sys.stderr)
+        print(f'Database provisioning failed (MariaDB error {exc.args[0]}). Check local root access, Snake Lab snapshot schema, and Ax3l event tables.', file=sys.stderr)
         return 1
     except subprocess.SubprocessError:
         print('Cannot discover local MariaDB socket. Check mariadb client and local root access.', file=sys.stderr)

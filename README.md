@@ -1,6 +1,7 @@
 # Snake Web code
 
-Python service that reads Snake Lab scores and publishes updates to the
+Python service that publishes Snake Lab scores, Ax3l experiment status, and a
+saved high-score board to the
 [Snake Web website](https://github.com/NadimGhaznavi/snake-web).
 Application code, deployment scripts, DevOps documentation, and tests live here; website pages and
 Jekyll configuration live in `snake-web`.
