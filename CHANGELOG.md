@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-09-16 @ 05:49
+
 ### Added
 
 - Publish the complete sanitized Event Log with the five agreed event types, search, filters, pagination, and a homepage link.
