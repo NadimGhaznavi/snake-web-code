@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.8] - 2026-09-16 @ 03:57
+
 ### Added
 
 - Generate a responsive Current Experiment panel with hostname, all-time and current golden scores, simulation and cycle counts, plain-text report names, and an inline SVG of the current golden run’s saved board.
