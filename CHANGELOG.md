@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Shorten conversation links in the Event Log to Current Golden, Prompt, or Response, preserving full detail content and text search.
+
 ## [1.3.1] - 2026-09-16 @ 05:57
 
 ### Fixed
