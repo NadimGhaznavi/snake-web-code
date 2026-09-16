@@ -2,6 +2,7 @@
 
 import json
 
+from snake_web.constants.PublicEvents import EVENT_LABELS, CONFIGURATION_FIELDS
 from snake_web.entity.ExperimentStatus import ExperimentStatus
 from snake_web.interface.DbMgr import DbMgr
 
@@ -141,3 +142,41 @@ class AppDb:
               AND g.event_id > %s
             ORDER BY g.event_id
         """, (after_event_id,))
+
+    def get_event_export_end(self) -> int:
+        return self._db.query("SELECT COALESCE(MAX(event_id), 0) AS event_id FROM ax3l.events")[0]['event_id']
+
+    def get_public_events(self, after_event_id: int, through_event_id: int) -> list[dict]:
+        clauses = ' OR '.join('(e.category = %s AND e.name = %s)' for _ in EVENT_LABELS)
+        kinds = tuple(value for pair in EVENT_LABELS for value in pair)
+        return self._db.query(f"""
+            SELECT e.event_id, e.occurred_at, e.category, e.name, e.log_level,
+                   e.process_id, e.source_name, e.parameter, e.parent_event_id, e.ax3l_version, m.content
+            FROM ax3l.events e LEFT JOIN ax3l.event_messages m USING (event_id)
+            WHERE e.event_id > %s AND e.event_id <= %s AND ({clauses})
+            ORDER BY e.event_id LIMIT 250
+        """, (after_event_id, through_event_id, *kinds))
+
+    def get_public_simulations(self, run_ids: list[str]) -> list[dict]:
+        if not run_ids:
+            return []
+        columns = ', '.join('c.' + column for column, _, _ in CONFIGURATION_FIELDS)
+        placeholders = ', '.join('%s' for _ in run_ids)
+        rows = self._db.query(f"""
+            SELECT r.run_id, r.project_version, r.high_score, r.completed_at,
+                   r.high_score_snapshot, {columns}
+            FROM simulation_runs r LEFT JOIN configurations c ON c.run_id = r.run_id
+            WHERE r.run_id IN ({placeholders}) ORDER BY r.id
+        """, tuple(run_ids))
+        for row in rows:
+            config = {}
+            for column, path, kind in CONFIGURATION_FIELDS:
+                value = row.pop(column)
+                if value is None:
+                    continue
+                target = config
+                for part in path[:-1]:
+                    target = target.setdefault(part, {})
+                target[path[-1]] = int(value) if kind == 'integer' else float(value)
+            row['configuration'] = config
+        return rows

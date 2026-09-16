@@ -67,3 +67,45 @@ choice's `message.reasoning_content`. Full responses, tool payloads, and raw
 decision messages are not exported. Expand Reason to read preserved multiline
 text. Configuration and simulation detail pages are not part of this slice.
 The existing Ax3l read grants cover this report.
+
+## Sanitized Event Log
+
+The homepage's Event Log link opens a static, searchable report with category
+and event filters and 100 entries per page. The export includes the entire
+retained history, not only the last 500 events. Its explicit event allowlist is:
+
+- SnakeLab / Simulation Completed
+- Configuration / Golden Retained
+- Conversation / Prompt
+- Conversation / Response
+- SnakeLab / Simulation Submitted
+
+Prompts retain text and embedded PNGs; JSON text is pretty-printed in preformatted
+blocks. Responses publish only first-choice `message.reasoning_content` and
+numeric usage/timing metrics, including nested numeric counts. The reasoning
+appears first; response envelopes, choices, assistant content, and tool-call
+arguments are absent from the CSV as well as the page. Remaining event messages
+and the displayed event metadata are retained. Text is rendered as text, never HTML.
+
+Simulation Run details show the saved board, run ID, project version, high score,
+and completion time. Submitted-configuration details use the explicit numeric
+configuration schema. Both have Home and Event Log links. Provisioning adds
+SELECT on `snakelab.configurations`; it does not change the source schema.
+
+The managed files are `reports/event-log.html`, `reports/event-detail.html`,
+`reports/event-log.js`, `reports/report-csv.js`, `reports/data/events.csv`,
+`reports/data/event-simulations.csv`, and `reports/data/event-export.json`.
+The versioned cursor records the highest source event examined, including
+excluded types. Event queries use batches of 250 and a snapshot upper bound;
+new retained events append once. Changed simulation details append observations,
+and the browser uses the latest observation per run. Export and cursor changes
+share the publication commit, so failed pushes can retry without duplicates.
+Malformed prompts fail the export without advancing the cursor. CSV fields
+larger than 64 MiB fail explicitly rather than being truncated.
+
+As with the other incremental exports, source records must retain their IDs and
+remain immutable. Resetting/replacing the source experiment requires a deliberate
+new export; a cursor ahead of the source is rejected. Changes to sanitization
+rules do not retroactively remove data from previously published files or Git
+history. Browser pagination limits rendered rows; it still downloads the complete
+CSV history. No live database-backed report service is required.
