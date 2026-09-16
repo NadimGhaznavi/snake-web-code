@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-09-16 @ 05:57
+
 ### Fixed
 
 - Convert MariaDB's Decimal event-cursor aggregate to an integer before JSON export, preventing status publication failures while preserving exact event IDs.
