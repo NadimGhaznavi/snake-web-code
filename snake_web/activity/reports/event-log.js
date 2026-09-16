@@ -90,6 +90,14 @@ function eventSummary(event) {
   if (event.name === 'reply_received') return event.detail.reasoning || 'No reasoning recorded';
   return event.detail.message || event.label;
 }
+function eventLinkLabel(event) {
+  if (event.category === 'Conversation') {
+    if (event.name === 'prompt_sent') return event.source_name === 'GoldenConfig' ? 'Current Golden' : 'Prompt';
+    if (event.name === 'reply_received') return 'Response';
+  }
+  const summary = eventSummary(event);
+  return summary.slice(0, 180) + (summary.length > 180 ? '…' : '');
+}
 function detailURL(event) {
   if (event.category === 'SnakeLab' && event.process_id) {
     return `event-detail.html?run=${encodeURIComponent(event.process_id)}` +
@@ -117,8 +125,7 @@ function setupEventList(events) {
       const row = element('tr', undefined, body);
       for (const key of ['occurred_at', 'event_id', 'log_level', 'category', 'label', 'parameter']) element('td', event[key], row);
       const cell = element('td', undefined, row);
-      const summary = eventSummary(event);
-      element('a', summary.slice(0, 180) + (summary.length > 180 ? '…' : ''), cell).href = detailURL(event);
+      element('a', eventLinkLabel(event), cell).href = detailURL(event);
     }
     document.getElementById('count').textContent = filtered.length ?
       `${page * size + 1}–${Math.min((page + 1) * size, filtered.length)} of ${filtered.length} matching events (${events.length} total)` : 'No matching events.';
