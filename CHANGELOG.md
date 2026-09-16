@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `scripts/push-now.sh` to publish immediately with the installed application and service credentials, showing output and returning the publication's exit status without changing the schedule.
+
 ## [1.5.0] - 2026-09-16 @ 19:54
 
 ### Changed
