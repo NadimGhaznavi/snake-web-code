@@ -8,20 +8,42 @@ for (const invalid of ['bad', 'event_id,simulations,score,seed\n1,2,3,<script>']
   try { parseHistory(invalid); } catch (error) { rejected = true; }
   assert(rejected);
 }
-const elements = [];
-globalThis.document = {createElementNS(ns, tag) {
-  return {tag, attrs: {}, events: {}, children: [],
-    setAttribute(key, value) {this.attrs[key] = value;},
-    appendChild(child) {this.children.push(child);},
-    addEventListener(key, callback) {this.events[key] = callback;}};
-}};
+let plotted;
+let hovered;
+globalThis.Plotly = {
+  newPlot(chart, traces, layout, config) {
+    plotted = {traces, layout, config};
+    return Promise.resolve();
+  },
+  Fx: {hover(chart, points) {hovered = points;}},
+};
 const detail = {};
-const svg = {appendChild(node) {elements.push(node);}, removeAttribute(key) {this.removed = key;}};
-drawHistory(rows, 10, svg, detail);
-const line = elements.find(node => node.tag === 'polyline');
-assert(line.attrs.points === '347,35 792,331.4 970,331.4');
-const dots = elements.filter(node => node.tag === 'circle');
-assert(dots.length === 2 && svg.removed === 'hidden');
-dots[1].events.focus();
-assert(detail.textContent.includes('score: 12; seed: 8'));
-print('Highscore CSV and plot checks passed');
+const chart = {
+  events: {},
+  removeAttribute(key) {this.removed = key;},
+  on(key, callback) {this.events[key] = callback;},
+  addEventListener(key, callback) {this.events[key] = callback;},
+};
+async function checkPlot() {
+  await drawHistory(rows, 10, chart, detail);
+  const [scores, tail] = plotted.traces;
+  assert(scores.line.shape === 'spline' && scores.line.smoothing === 1);
+  assert(JSON.stringify(scores.x) === '[3,8]' && JSON.stringify(scores.y) === '[50,12]');
+  assert(JSON.stringify(tail.x) === '[8,10]' && JSON.stringify(tail.y) === '[12,12]');
+  assert(chart.removed === 'hidden' && plotted.config.responsive);
+  chart.events.focus();
+  assert(detail.textContent.includes('score: 50; seed: 7'));
+  chart.events.keydown({key: 'ArrowRight', preventDefault() {}});
+  assert(detail.textContent.includes('score: 12; seed: 8'));
+  assert(hovered[0].pointNumber === 1);
+  chart.events.plotly_hover({points: [{curveNumber: 0, pointNumber: 0}]});
+  assert(detail.textContent.includes('score: 50; seed: 7'));
+  await drawHistory([rows[0]], 3, chart, detail);
+  assert(plotted.traces.length === 1 && plotted.traces[0].x.length === 1);
+  print('Highscore CSV and Plotly checks passed');
+}
+const loop = new imports.gi.GLib.MainLoop(null, false);
+let failure;
+checkPlot().catch(error => {failure = error;}).finally(() => loop.quit());
+loop.run();
+if (failure) throw failure;

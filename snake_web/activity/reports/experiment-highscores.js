@@ -16,39 +16,54 @@ function parseHistory(csv) {
   });
 }
 
-function drawHistory(rows, total, svg, detail) {
-  const ns = 'http://www.w3.org/2000/svg';
-  function add(tag, attrs, text) {
-    const node = document.createElementNS(ns, tag);
-    Object.entries(attrs).forEach(([key, value]) => node.setAttribute(key, value));
-    if (text !== undefined) node.textContent = text;
-    svg.appendChild(node);
-    return node;
-  }
+async function drawHistory(rows, total, chart, detail) {
   const end = rows.reduce((max, row) => Math.max(max, row.simulations), Math.max(total, 1));
-  const top = rows.reduce((max, row) => Math.max(max, row.score), 1);
-  const x = value => 80 + value / end * 890;
-  const y = value => 425 - value / top * 390;
-  for (let i = 0; i <= 5; i++) {
-    add('line', {x1: 80, x2: 970, y1: y(top*i/5), y2: y(top*i/5), stroke: '#40566e'});
-    add('text', {x: 68, y: y(top*i/5)+5, fill: '#d5dfeb', 'text-anchor': 'end'}, String(Math.round(top*i/5)));
-    add('text', {x: x(end*i/5), y: 452, fill: '#d5dfeb', 'text-anchor': 'middle'}, String(Math.round(end*i/5)));
-  }
-  add('text', {x: 525, y: 488, fill: '#d5dfeb', 'text-anchor': 'middle'}, 'Number of simulations');
-  add('text', {transform: 'translate(20 240) rotate(-90)', fill: '#d5dfeb', 'text-anchor': 'middle'}, 'Current config high score');
-  const points = rows.map(r => `${x(r.simulations)},${y(r.score)}`);
-  points.push(`${x(end)},${y(rows[rows.length-1].score)}`);
-  add('polyline', {points: points.join(' '), fill: 'none', stroke: '#4c9be8', 'stroke-width': 3});
-  rows.forEach(row => {
-    const label = `Simulations: ${row.simulations}; score: ${row.score}; seed: ${row.seed ?? 'unknown'}; event: ${row.id}`;
-    const point = add('circle', {cx: x(row.simulations), cy: y(row.score), r: 5, fill: '#f09445', tabindex: 0, 'aria-label': label});
-    const title = document.createElementNS(ns, 'title');
-    title.textContent = label;
-    point.appendChild(title);
-    point.addEventListener('mouseenter', () => { detail.textContent = label; });
-    point.addEventListener('focus', () => { detail.textContent = label; });
+  const labels = rows.map(row =>
+    `Simulations: ${row.simulations}; score: ${row.score}; seed: ${row.seed ?? 'unknown'}; event: ${row.id}`);
+  const last = rows[rows.length - 1];
+  const traces = [{
+    type: 'scatter', mode: 'lines+markers',
+    x: rows.map(row => row.simulations), y: rows.map(row => row.score),
+    text: labels, hovertemplate: '%{text}<extra></extra>',
+    line: {color: '#4c9be8', width: 3, shape: 'spline', smoothing: 1},
+    marker: {color: '#f09445', size: 10},
+  }];
+  // Keep the final score level through the latest simulation count.
+  if (end > last.simulations) traces.push({
+    type: 'scatter', mode: 'lines',
+    x: [last.simulations, end], y: [last.score, last.score],
+    line: {color: '#4c9be8', width: 3}, hoverinfo: 'skip',
   });
-  svg.removeAttribute('hidden');
+  chart.removeAttribute('hidden');
+  await Plotly.newPlot(chart, traces, {
+    paper_bgcolor: '#151f2b', plot_bgcolor: '#151f2b',
+    font: {color: '#d5dfeb', family: 'Courier New, monospace'},
+    margin: {l: 80, r: 30, t: 30, b: 75}, showlegend: false,
+    xaxis: {title: {text: 'Number of simulations'}, range: [0, end], gridcolor: '#40566e'},
+    yaxis: {title: {text: 'Current config high score'}, rangemode: 'tozero', gridcolor: '#40566e'},
+  }, {responsive: true, displaylogo: false});
+  let selected = 0;
+  function showPoint() {
+    detail.textContent = labels[selected];
+    Plotly.Fx.hover(chart, [{curveNumber: 0, pointNumber: selected}]);
+  }
+  chart.on('plotly_hover', event => {
+    const point = event.points[0];
+    if (point.curveNumber === 0) {
+      selected = point.pointNumber;
+      detail.textContent = labels[selected];
+    }
+  });
+  chart.addEventListener('focus', showPoint);
+  chart.addEventListener('keydown', event => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    if (event.key === 'Home') selected = 0;
+    else if (event.key === 'End') selected = rows.length - 1;
+    else selected = Math.max(0, Math.min(rows.length - 1,
+      selected + (event.key === 'ArrowRight' ? 1 : -1)));
+    showPoint();
+  });
 }
 
 async function loadHistory() {
@@ -58,7 +73,7 @@ async function loadHistory() {
     if (!response.ok) throw new Error('CSV request failed');
     const rows = parseHistory(await response.text());
     message.textContent = rows.length ? '' : 'No accepted scores recorded yet.';
-    if (rows.length) drawHistory(rows, Number(document.getElementById('total').textContent),
+    if (rows.length) await drawHistory(rows, Number(document.getElementById('total').textContent),
       document.getElementById('chart'), document.getElementById('detail'));
   } catch (error) {
     message.textContent = 'Unable to load score history. Please reload to try again.';

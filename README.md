@@ -33,13 +33,18 @@ See [DevOps documentation](docs/devops/index.md) for all operational guides and 
 The homepage links to Experiment Highscores. Each publishing pass reads the
 published CSV after synchronizing the site checkout, queries accepted scores
 with a newer event ID, and appends them. The first pass exports the full accepted
-score history. The browser fetches the static CSV and draws a plot with hover
-and keyboard details, preserving lower scores after seed changes.
+score history. The browser fetches the static CSV and draws a Plotly spline plot
+with hover and keyboard details, preserving lower scores after seed changes.
+Plotly loads from its version-pinned CDN; smoothing changes only the connecting
+line, while markers and CSV data retain the recorded scores.
 
 Only event ID, simulation count, score, and seed are exported. Event-log payloads
 and their sanitization are outside this slice. Export, report assets, and homepage
 share one publication commit; failed pushes retry without duplicating records.
-The existing polling/publication triggers remain in place.
+The service publishes on the hour and half hour in the server's local timezone,
+starting at the next boundary after startup. It does not poll the database
+between scheduled passes. `--once` still publishes immediately; unchanged
+content does not create a new commit.
 
 Upgrade provisioning adds SELECT access to `ax3l.experiment_highscores`.
 The CSV assumes one continuous Ax3l database history with immutable accepted-score

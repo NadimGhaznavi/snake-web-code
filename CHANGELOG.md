@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Use Plotly spline smoothing for Experiment Highscores, retaining recorded score markers, hover details, and keyboard navigation.
+- Schedule publishing on the hour and half hour in the server's local timezone, waiting until the next boundary after startup and retrying failures at the next scheduled time. Remove five-minute database polling; keep immediate manual publishing with `--once`.
+
 ## [1.4.0] - 2026-09-16 @ 06:25
 
 ### Added
