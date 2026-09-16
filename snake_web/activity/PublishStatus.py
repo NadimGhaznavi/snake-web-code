@@ -1,15 +1,17 @@
 """Turn the current simulation high score into a published homepage."""
 
-import re
-
-
-def render_status(content: str, score: int) -> str:
+def render_status(score: int) -> str:
     if type(score) is not int or score < 0:
         raise ValueError("High score must be a nonnegative integer")
-    pattern = r"(?m)^(- Current highscore: )[0-9]+([ \t]*\r?)$"
-    if len(re.findall(pattern, content)) != 1:
-        raise ValueError("Homepage must contain exactly one current highscore line")
-    return re.sub(pattern, lambda match: f"{match[1]}{score}{match[2]}", content)
+    return (
+        "---\n"
+        "title: Ax3l Experiment Status\n"
+        "author_profile: true\n"
+        "layout: single\n"
+        "---\n\n"
+        "# Experiment Status\n\n"
+        f"- Current highscore: {score}\n"
+    )
 
 
 class PublishStatus:
@@ -22,6 +24,5 @@ class PublishStatus:
         if score is None:
             return "No recorded score; homepage preserved"
         with self._publisher.session():
-            content = self._publisher.read_status()
-            changed = self._publisher.publish(render_status(content, score))
+            changed = self._publisher.publish(render_status(score))
         return f"High score {score}: {'published' if changed else 'unchanged'}"
