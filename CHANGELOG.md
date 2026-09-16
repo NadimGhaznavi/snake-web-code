@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-09-16 @ 05:13
+
 ### Added
 
 - Publish an Experiment Highscores plot backed by an incremental static CSV of accepted scores, with hover and keyboard details and a homepage link.
