@@ -1,7 +1,7 @@
 # Install Snake Web
 
 Snake Web reads the highest recorded score across all Snake Lab simulation
-runs, updates `site/index.md` in a dedicated publishing clone, and
+runs, updates `index.md` at the root of the dedicated publishing clone, and
 commits and pushes the page when its content changes. It runs immediately on
 startup and then waits `DSnakeWeb.POLL_INTERVAL` seconds between checks
 (currently 300 seconds). It pushes when the score changes or a previous homepage
@@ -80,7 +80,8 @@ the reader account and grants.
 
 Set up the dedicated clone and SSH credentials as described in
 [Git Access](git-access.md). The configured branch must
-already contain `site/index.md` with exactly one `- Current highscore: NUMBER`
+already contain `index.md` at its root (normally `/var/lib/snake-web/site/index.md`)
+with exactly one `- Current highscore: NUMBER`
 line. After configuring the service, run `sudo systemctl restart snake-web.service`
 and inspect `journalctl -u snake-web.service`. Missing configuration or publishing
 failures are logged and retried on the next interval.
