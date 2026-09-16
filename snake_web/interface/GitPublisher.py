@@ -65,9 +65,6 @@ class GitPublisher:
         self._git("ls-files", "--error-unmatch", "--", self.STATUS_PATH)
         return path
 
-    def read_status(self):
-        return self._status_file().read_bytes().decode("utf-8")
-
     def publish(self, content):
         path = self._status_file()
         if path.read_bytes() != content.encode("utf-8"):
