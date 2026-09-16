@@ -1,6 +1,8 @@
 """Real Git integration tests; every repository and remote is temporary."""
 
 import fcntl
+import socket
+from dataclasses import replace
 import os
 from pathlib import Path
 import subprocess
@@ -15,11 +17,13 @@ from snake_web.activity.AppDb import AppDb
 from snake_web.activity.PublishStatus import PublishStatus, render_status
 from snake_web.interface.DbMgr import DbMgr
 from snake_web.interface.GitPublisher import GitPublisher
+from snake_web.entity.ExperimentStatus import ExperimentStatus
 from snake_web import server
 
 
 ROOT = Path(__file__).resolve().parents[1]
 PAGE = (ROOT / 'tests/fixtures/status.md').read_text()
+STATUS = ExperimentStatus(51, 39, 190, 26)
 
 
 class PublishingTests(unittest.TestCase):
@@ -40,7 +44,7 @@ class PublishingTests(unittest.TestCase):
         self.git(self.repo, 'push', 'origin', 'main')
         self.publisher = GitPublisher(self.repo)
         self.appdb = Mock()
-        self.appdb.get_current_highscore.return_value = 51
+        self.appdb.get_experiment_status.return_value = STATUS
         self.activity = PublishStatus(self.appdb, self.publisher)
 
     def git(self, directory, *args):
@@ -52,13 +56,23 @@ class PublishingTests(unittest.TestCase):
 
     def test_publish_and_no_duplicate_commit(self):
         self.assertIn('published', self.activity.run())
-        self.assertEqual(self.remote_page(), render_status(51).strip())
+        self.assertEqual(self.remote_page(), render_status(STATUS, socket.gethostname()).strip())
         head = self.git(self.remote, 'rev-parse', 'main')
         with patch.object(self.publisher, '_git', wraps=self.publisher._git) as git:
             self.assertIn('unchanged', self.activity.run())
             self.assertFalse(any(call.args[0] == 'push' for call in git.call_args_list))
         self.assertEqual(head, self.git(self.remote, 'rev-parse', 'main'))
         self.assertEqual(self.git(self.repo, 'diff-tree', '--no-commit-id', '--name-only', '-r', 'HEAD'), 'index.md')
+
+    def test_other_metrics_publish_without_a_new_all_time_highscore(self):
+        self.activity.run()
+        head = self.git(self.remote, 'rev-parse', 'main')
+        self.appdb.get_experiment_status.return_value = replace(STATUS, simulations_submitted=191,
+                                                               experiment_cycles=27)
+        self.assertIn('published', self.activity.run())
+        self.assertNotEqual(head, self.git(self.remote, 'rev-parse', 'main'))
+        self.assertIn('Simulations Submitted: 191', self.remote_page())
+        self.assertIn('Experiment Cycles: 27', self.remote_page())
 
     def test_existing_contents_are_replaced(self):
         for content in (b'', b'# Custom homepage\n',
@@ -70,8 +84,8 @@ class PublishingTests(unittest.TestCase):
                 self.git(self.repo, 'commit', '-m', 'Replace homepage')
                 self.git(self.repo, 'push', 'origin', 'main')
                 self.activity.run()
-                self.assertEqual(self.page.read_text(), render_status(51))
-                self.assertEqual(self.remote_page(), render_status(51).strip())
+                self.assertEqual(self.page.read_text(), render_status(STATUS, socket.gethostname()))
+                self.assertEqual(self.remote_page(), render_status(STATUS, socket.gethostname()).strip())
 
     def test_missing_homepage_is_not_created(self):
         self.git(self.repo, 'rm', 'index.md')
@@ -84,19 +98,19 @@ class PublishingTests(unittest.TestCase):
         self.assertEqual(self.git(self.remote, 'rev-parse', 'main'), head)
 
     def test_zero_is_a_score(self):
-        self.appdb.get_current_highscore.return_value = 0
+        self.appdb.get_experiment_status.return_value = replace(STATUS, all_time_highscore=0, current_highscore=0)
         self.activity.run()
-        self.assertIn('Current highscore: 0', self.remote_page())
+        self.assertIn('Current Highscore: 0', self.remote_page())
 
     def test_no_score_preserves_page_without_git(self):
-        self.appdb.get_current_highscore.return_value = None
+        self.appdb.get_experiment_status.return_value = replace(STATUS, all_time_highscore=None)
         with patch.object(self.publisher, 'session') as session:
             self.assertIn('No recorded score', self.activity.run())
             session.assert_not_called()
         self.assertEqual(self.page.read_text(), PAGE)
 
     def test_database_failure_preserves_page(self):
-        self.appdb.get_current_highscore.side_effect = RuntimeError('DB unavailable')
+        self.appdb.get_experiment_status.side_effect = RuntimeError('DB unavailable')
         with self.assertRaisesRegex(RuntimeError, 'DB unavailable'):
             self.activity.run()
         self.assertEqual(self.page.read_text(), PAGE)
@@ -172,7 +186,8 @@ class PublishingTests(unittest.TestCase):
                'PUBLISH_CHECKOUT': str(self.repo), 'PUBLISH_BRANCH': 'main'}
         with patch.dict(os.environ, env):
             with DbMgr() as db:
-                score = AppDb(db).get_current_highscore()
+                status = AppDb(db).get_experiment_status()
+                score = status.all_time_highscore
                 with self.assertRaises(pymysql.err.OperationalError) as rejected:
                     db.query('UPDATE simulation_runs SET high_score = 0 WHERE id = 1')
                 self.assertEqual(rejected.exception.args[0], 1792)
@@ -180,21 +195,13 @@ class PublishingTests(unittest.TestCase):
         result = subprocess.run([sys.executable, '-m', 'snake_web.server', '--once'],
                                 cwd=ROOT, env=env, capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(self.remote_page(), render_status(score).strip())
+        self.assertEqual(self.remote_page(), render_status(status, socket.gethostname()).strip())
         result = subprocess.run([sys.executable, '-m', 'snake_web.server', '--once'],
                                 cwd=ROOT, env=env, capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn('unchanged', result.stderr)
 
 
-class RenderingTests(unittest.TestCase):
-    def test_complete_page(self):
-        self.assertEqual(render_status(51), PAGE.replace(': 33', ': 51').rstrip() + '\n')
-
-    def test_invalid_scores_rejected(self):
-        for score in (-1, True, None, 1.5, '51'):
-            with self.subTest(score=score), self.assertRaises(ValueError):
-                render_status(score)
 
 
 class ServiceTests(unittest.TestCase):
