@@ -94,13 +94,14 @@ branch. Handle remote updates before retrying a rejected push; do not force-push
 
 The publisher locks its clone, requires a clean worktree on `PUBLISH_BRANCH`,
 fetches that branch from `origin`, and fast-forwards to remote changes before
-editing the page. It preserves front matter and other content, stages only
-`index.md`, and commits only when that file changes. It never
+generating the homepage and reports. It stages only `index.md`,
+`reports/experiment-highscores.html`, `reports/experiment-highscores.js`, and
+`reports/data/experiment-highscores.csv`, committing all changed files together. It never
 force-pushes.
 
 If a push fails, the status commit remains locally and is retried on the next
 pass, even when the score is unchanged. Pending commits are accepted only when
-each changes solely the homepage. A dirty checkout, unrelated pending commit,
+each changes only these managed files. A dirty checkout, unrelated pending commit,
 or diverged history stops that pass and logs an error. Stop the service, inspect
 and reconcile the publishing clone, then restart it. A commit failure can leave
 the generated page staged and likewise requires inspection.

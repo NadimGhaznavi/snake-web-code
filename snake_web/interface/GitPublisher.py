@@ -1,4 +1,4 @@
-"""Publish only the homepage from a dedicated, serialized Git checkout."""
+"""Publish the homepage and static reports from a dedicated, serialized Git checkout."""
 
 from contextlib import contextmanager
 import fcntl
@@ -10,6 +10,10 @@ import tempfile
 
 class GitPublisher:
     STATUS_PATH = "index.md"
+    REPORT_PATH = "reports/experiment-highscores.html"
+    HISTORY_PATH = "reports/data/experiment-highscores.csv"
+    SCRIPT_PATH = "reports/experiment-highscores.js"
+    OWNED_PATHS = (STATUS_PATH, REPORT_PATH, HISTORY_PATH, SCRIPT_PATH)
 
     def __init__(self, checkout, branch="main"):
         self.checkout = Path(checkout).resolve()
@@ -49,13 +53,13 @@ class GitPublisher:
                 self._git("merge", "--ff-only", "FETCH_HEAD")
             elif not self._ancestor("FETCH_HEAD", "HEAD"):
                 raise RuntimeError("Publishing branch diverged; reconcile it before retrying")
-            # Only retry unpublished commits whose changes are confined to the homepage.
+            # Only retry unpublished commits whose changes are confined to the managed publication files.
             commits = self._git("rev-list", "FETCH_HEAD..HEAD").stdout.splitlines()
             for commit in commits:
                 parents = self._git("rev-list", "--parents", "-n", "1", commit).stdout.split()
                 paths = self._git("diff-tree", "--no-commit-id", "--name-only", "-r", commit).stdout.splitlines()
-                if len(parents) != 2 or paths != [self.STATUS_PATH]:
-                    raise RuntimeError("Unpublished commits must change only the homepage")
+                if len(parents) != 2 or not paths or not set(paths).issubset(self.OWNED_PATHS):
+                    raise RuntimeError("Unpublished commits must change only the homepage and managed reports")
             yield
 
     def _status_file(self):
@@ -65,22 +69,47 @@ class GitPublisher:
         self._git("ls-files", "--error-unmatch", "--", self.STATUS_PATH)
         return path
 
-    def publish(self, content):
-        path = self._status_file()
-        if path.read_bytes() != content.encode("utf-8"):
+    def read_history(self):
+        path = self._managed_file(self.HISTORY_PATH)
+        return path.read_text() if path.exists() else ''
+
+    def _managed_file(self, name):
+        if name not in self.OWNED_PATHS:
+            raise ValueError('Not a managed publishing path')
+        path = self.checkout / name
+        if path.resolve() != path or (path.exists() and not path.is_file()):
+            raise RuntimeError('Publishing paths must be regular files without symlinks')
+        return path
+
+    def publish(self, content, reports=None):
+        self._status_file()
+        files = {self.STATUS_PATH: content, **(reports or {})}
+        paths = {name: self._managed_file(name) for name in files}
+        changed = []
+        for name, value in files.items():
+            path = paths[name]
+            if path.exists() and path.read_bytes() == value.encode('utf-8'):
+                continue
+            self._write_file(path, value)
+            changed.append(name)
+        if changed:
+            self._git('add', '--', *changed)
+            self._git('commit', '-m', 'Update experiment status and reports', '--', *changed)
+        pending = self._git("rev-list", "--count", "FETCH_HEAD..HEAD").stdout.strip() != "0"
+        if pending:
+            self._git("push", "origin", f"HEAD:refs/heads/{self.branch}")
+        return pending
+
+    def _write_file(self, path, content):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if not path.exists() or path.read_bytes() != content.encode("utf-8"):
             temporary = None
             try:
                 with tempfile.NamedTemporaryFile(dir=path.parent, delete=False) as stream:
                     temporary = Path(stream.name)
                     stream.write(content.encode("utf-8"))
-                temporary.chmod(path.stat().st_mode & 0o777)
+                temporary.chmod(path.stat().st_mode & 0o777 if path.exists() else 0o644)
                 temporary.replace(path)
             finally:
                 if temporary is not None:
                     temporary.unlink(missing_ok=True)
-            self._git("add", "--", self.STATUS_PATH)
-            self._git("commit", "-m", "Update simulation high score", "--", self.STATUS_PATH)
-        pending = self._git("rev-list", "--count", "FETCH_HEAD..HEAD").stdout.strip() != "0"
-        if pending:
-            self._git("push", "origin", f"HEAD:refs/heads/{self.branch}")
-        return pending

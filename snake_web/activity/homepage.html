@@ -43,7 +43,7 @@ classes: wide
       <h3 id="experiment-reports-title">Reports</h3>
       <ul class="report-names">
         <li>Score Distribution Histogram</li>
-        <li>Experiment Highscores</li>
+        <li><a href="reports/experiment-highscores.html">Experiment Highscores</a></li>
         <li>Golden Configurations</li>
       </ul>
     </section>

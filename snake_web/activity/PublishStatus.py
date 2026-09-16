@@ -5,6 +5,7 @@ from pathlib import Path
 import socket
 from string import Template
 
+from snake_web.activity.HighscoreHistory import append_history, read_history
 from snake_web.activity.SimulationBoard import board_svg
 from snake_web.entity.ExperimentStatus import ExperimentStatus
 
@@ -43,5 +44,16 @@ class PublishStatus:
         if status.all_time_highscore is None:
             return 'No recorded score; homepage preserved'
         with self._publisher.session():
-            changed = self._publisher.publish(render_status(status, socket.gethostname()))
+            existing = self._publisher.read_history()
+            history = read_history(existing)
+            records = self._appdb.get_highscore_history(history[-1]['event_id'] if history else 0)
+            csv_data = append_history(existing, records)
+            assets = Path(__file__).parent / 'reports'
+            report = (assets / 'experiment-highscores.html').read_text().replace(
+                '__TOTAL__', str(status.simulations_submitted))
+            changed = self._publisher.publish(render_status(status, socket.gethostname()), {
+                self._publisher.HISTORY_PATH: csv_data,
+                self._publisher.REPORT_PATH: report,
+                self._publisher.SCRIPT_PATH: (assets / 'experiment-highscores.js').read_text(),
+            })
         return f"Experiment homepage: {'published' if changed else 'unchanged'}"

@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-09-16 @ 05:13
+
+### Added
+
+- Publish an Experiment Highscores plot backed by an incremental static CSV of accepted scores, with hover and keyboard details and a homepage link.
+- Publish report assets and homepage together and retry failed pushes without duplicate history records.
+- Provision read-only access to Ax3l's experiment highscore history and install the report assets.
+
 ## [0.2.9] - 2026-09-16 @ 04:32
 
 ### Fixed
