@@ -1,4 +1,4 @@
-"""Publish only the status page from a dedicated, serialized Git checkout."""
+"""Publish only the homepage from a dedicated, serialized Git checkout."""
 
 from contextlib import contextmanager
 import fcntl
@@ -9,7 +9,7 @@ import tempfile
 
 
 class GitPublisher:
-    STATUS_PATH = "pages/status/index.md"
+    STATUS_PATH = "site/index.md"
 
     def __init__(self, checkout, branch="main"):
         self.checkout = Path(checkout).resolve()
@@ -49,19 +49,19 @@ class GitPublisher:
                 self._git("merge", "--ff-only", "FETCH_HEAD")
             elif not self._ancestor("FETCH_HEAD", "HEAD"):
                 raise RuntimeError("Publishing branch diverged; reconcile it before retrying")
-            # Only retry unpublished commits whose changes are confined to status.
+            # Only retry unpublished commits whose changes are confined to the homepage.
             commits = self._git("rev-list", "FETCH_HEAD..HEAD").stdout.splitlines()
             for commit in commits:
                 parents = self._git("rev-list", "--parents", "-n", "1", commit).stdout.split()
                 paths = self._git("diff-tree", "--no-commit-id", "--name-only", "-r", commit).stdout.splitlines()
                 if len(parents) != 2 or paths != [self.STATUS_PATH]:
-                    raise RuntimeError("Unpublished commits must change only the status page")
+                    raise RuntimeError("Unpublished commits must change only the homepage")
             yield
 
     def _status_file(self):
         path = self.checkout / self.STATUS_PATH
         if path.resolve() != path or not path.is_file():
-            raise RuntimeError("Status page must be an existing file without symlinks")
+            raise RuntimeError("Homepage must be an existing file without symlinks")
         self._git("ls-files", "--error-unmatch", "--", self.STATUS_PATH)
         return path
 

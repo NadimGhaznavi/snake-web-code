@@ -38,10 +38,10 @@ fi
 [[ $# == 0 ]] || { usage >&2; exit 2; }
 [[ ${EUID} == 0 ]] || fail 'Run this installer as root.'
 
-for command in getent groupadd useradd install id systemctl git mariadb; do
+for command in getent groupadd useradd usermod install id systemctl git mariadb; do
     command -v "${command}" >/dev/null || fail "Required command not found: ${command}"
 done
-[[ -x /usr/sbin/nologin ]] || fail 'Missing /usr/sbin/nologin.'
+[[ -x /bin/bash ]] || fail 'Missing /bin/bash.'
 [[ -x /usr/bin/python3 ]] || fail 'Missing /usr/bin/python3.'
 [[ -d /run/systemd/system ]] || fail 'This installer requires a running systemd system.'
 code_files=(
@@ -80,14 +80,17 @@ if account=$(getent passwd "${service_user}"); then
     IFS=: read -r name password uid gid comment account_home account_shell <<< "${account}"
     [[ ${uid} != 0 ]] || fail 'The service account must not be root.'
     [[ ${account_home} == "${service_home}" ]] || fail "Existing account home must be ${service_home}."
-    [[ ${account_shell} == /usr/sbin/nologin ]] || fail 'Existing account must use /usr/sbin/nologin.'
+    [[ ${account_shell} == /bin/bash || ${account_shell} == /usr/sbin/nologin ]] || fail 'Existing account must use /bin/bash or /usr/sbin/nologin.'
     [[ $(id -gn "${service_user}") == "${service_user}" ]] || fail "Existing account primary group must be ${service_user}."
+    if [[ ${account_shell} == /usr/sbin/nologin ]]; then
+        usermod --shell /bin/bash "${service_user}"
+    fi
 else
     if ! getent group "${service_user}" >/dev/null; then
         groupadd --system "${service_user}"
     fi
     useradd --system --gid "${service_user}" --home-dir "${service_home}" \
-        --no-create-home --shell /usr/sbin/nologin "${service_user}"
+        --no-create-home --shell /bin/bash "${service_user}"
 fi
 
 install -d -m 0750 -o "${service_user}" -g "${service_user}" "${service_home}"
