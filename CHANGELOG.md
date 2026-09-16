@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-09-16 @ 19:54
+
 ### Changed
 
 - Render the Score Distribution Histogram with responsive Plotly bars, preserving shared bins and the all-runs/oldest-half comparison, with hover counts and keyboard navigation.
