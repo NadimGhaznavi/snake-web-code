@@ -69,7 +69,7 @@ class MigrationTests(unittest.TestCase):
         self.assertEqual(self.destination.read_text(), self.original)
         self.assertEqual(self.legacy.read_text(), 'unrelated legacy file')
 
-    def test_reader_gets_only_the_three_required_tables(self):
+    def test_reader_gets_only_the_four_required_tables(self):
         self.provision()
         calls = self.admin.cursor.return_value.__enter__.return_value.execute.call_args_list
         grants = [call.args[0] for call in calls if call.args[0].startswith('GRANT ')]
@@ -77,6 +77,7 @@ class MigrationTests(unittest.TestCase):
             'GRANT SELECT ON snakelab.simulation_runs TO %s@%s',
             'GRANT SELECT ON ax3l.events TO %s@%s',
             'GRANT SELECT ON ax3l.event_messages TO %s@%s',
+            'GRANT SELECT ON ax3l.experiment_highscores TO %s@%s',
         })
 
     def test_foreign_legacy_credentials_are_left_untouched(self):
@@ -85,14 +86,14 @@ class MigrationTests(unittest.TestCase):
             self.provision()
         self.assertFalse(self.destination.exists())
         self.assertEqual(self.legacy.read_text(), 'DB_USER=snake_lab\n')
-        self.assertEqual(self.admin.cursor.return_value.__enter__.return_value.execute.call_count, 4)
+        self.assertEqual(self.admin.cursor.return_value.__enter__.return_value.execute.call_count, 5)
 
     def test_socket_mismatch_does_not_copy_or_change_account(self):
         self.legacy.write_text(self.original.replace('snake-web-test.sock', 'other.sock'))
         with self.assertRaisesRegex(RuntimeError, 'Saved socket differs'):
             self.provision()
         self.assertFalse(self.destination.exists())
-        self.assertEqual(self.admin.cursor.return_value.__enter__.return_value.execute.call_count, 4)
+        self.assertEqual(self.admin.cursor.return_value.__enter__.return_value.execute.call_count, 5)
 
 
 @unittest.skipUnless(os.environ.get('SNAKE_WEB_PROVISION_TEST_SOCKET'), 'requires isolated provisioning DB')
