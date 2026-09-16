@@ -55,6 +55,9 @@ The Score Distribution Histogram compares all scored runs with the oldest half
 of submitted runs, matching Ax3l's shared bins (at most 40, minimum width 1).
 The cohort split includes unscored runs and rounds down odd totals; null scores
 are then excluded from bar counts. Zero remains a valid score.
+Plotly renders the precomputed bins as overlapping blue and orange bars, with
+hover counts and arrow-key navigation. It uses the same version-pinned CDN as
+Experiment Highscores.
 
 `reports/data/run-scores.csv` contains only numeric run IDs and nullable scores.
 Because scores change while runs execute, each pass compares the database's

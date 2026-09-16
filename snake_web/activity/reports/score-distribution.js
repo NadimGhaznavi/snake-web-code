@@ -36,45 +36,48 @@ function scoreDistribution(rows) {
   return result;
 }
 
-function drawDistribution(data, svg, detail) {
-  const ns = 'http://www.w3.org/2000/svg';
-  function add(tag, attrs, text) {
-    const node = document.createElementNS(ns, tag);
-    Object.entries(attrs).forEach(([key, value]) => node.setAttribute(key, value));
-    if (text !== undefined) node.textContent = text;
-    svg.appendChild(node);
-    return node;
+async function drawDistribution(data, chart, detail) {
+  const labels = data.bins.map(bin => bin.low === bin.high ? String(bin.low) : `${bin.low}–${bin.high}`);
+  const descriptions = data.bins.map((bin, index) =>
+    `Score: ${labels[index]}; All runs: ${bin.all}; Oldest half: ${bin.older}`);
+  const centers = data.bins.map(bin => (bin.low + bin.high) / 2);
+  // Plot precomputed counts so both cohorts retain exactly the same bins.
+  const traces = [['all', 'All runs', '#4c9be8', .92],
+                  ['older', 'Oldest half', '#f09445', .52]].map(([key, name, color, width]) => ({
+    type: 'bar', name, x: centers, y: data.bins.map(bin => bin[key]),
+    width: data.bins.map(bin => (bin.high - bin.low + 1) * width),
+    marker: {color}, text: descriptions, textposition: 'none',
+    hovertemplate: '%{text}<extra></extra>',
+  }));
+  chart.removeAttribute('hidden');
+  await Plotly.newPlot(chart, traces, {
+    barmode: 'overlay', paper_bgcolor: '#151f2b', plot_bgcolor: '#151f2b',
+    font: {color: '#d5dfeb', family: 'Courier New, monospace'},
+    margin: {l: 65, r: 20, t: 65, b: 75},
+    legend: {orientation: 'h', x: 0, y: 1.15},
+    xaxis: {title: {text: 'Run high score'}, gridcolor: '#40566e', automargin: true},
+    yaxis: {title: {text: 'Number of runs'}, rangemode: 'tozero',
+            tickformat: ',d', gridcolor: '#40566e', automargin: true},
+  }, {responsive: true, displaylogo: false});
+  let selected = 0;
+  function showBin() {
+    detail.textContent = descriptions[selected];
+    Plotly.Fx.hover(chart, [{curveNumber: 0, pointNumber: selected}]);
   }
-  const top = Math.max(1, ...data.bins.map(bin => bin.all));
-  const width = 890 / data.bins.length;
-  const y = value => 425 - value / top * 390;
-  const ticks = Math.min(top, 5);
-  for (let i = 0; i <= ticks; i++) {
-    const value = Math.round(top * i / ticks);
-    add('line', {x1: 80, x2: 970, y1: y(value), y2: y(value), stroke: '#40566e'});
-    add('text', {x: 68, y: y(value)+5, fill: '#d5dfeb', 'text-anchor': 'end'}, String(value));
-  }
-  data.bins.forEach((bin, index) => {
-    const label = bin.low === bin.high ? String(bin.low) : `${bin.low}–${bin.high}`;
-    for (const [key, color, inset] of [['all', '#4c9be8', .04], ['older', '#f09445', .24]]) {
-      if (!bin[key]) continue;
-      const description = `Score: ${label}; All runs: ${bin.all}; Oldest half: ${bin.older}`;
-      const bar = add('rect', {x: 80 + (index + inset) * width, y: y(bin[key]),
-        width: width * (1 - 2 * inset), height: 425 - y(bin[key]), fill: color,
-        tabindex: 0, 'aria-label': description});
-      const title = document.createElementNS(ns, 'title');
-      title.textContent = description;
-      bar.appendChild(title);
-      bar.addEventListener('mouseenter', () => { detail.textContent = description; });
-      bar.addEventListener('focus', () => { detail.textContent = description; });
-    }
-    if (index % Math.ceil(data.bins.length / 8) === 0) {
-      add('text', {x: 80 + (index + .5) * width, y: 452, fill: '#d5dfeb', 'text-anchor': 'middle'}, label);
-    }
+  chart.on('plotly_hover', event => {
+    selected = event.points[0].pointNumber;
+    detail.textContent = descriptions[selected];
   });
-  add('text', {x: 525, y: 488, fill: '#d5dfeb', 'text-anchor': 'middle'}, 'Run high score');
-  add('text', {transform: 'translate(20 240) rotate(-90)', fill: '#d5dfeb', 'text-anchor': 'middle'}, 'Number of runs');
-  svg.removeAttribute('hidden');
+  chart.addEventListener('focus', showBin);
+  chart.addEventListener('keydown', event => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    if (event.key === 'Home') selected = 0;
+    else if (event.key === 'End') selected = data.bins.length - 1;
+    else selected = Math.max(0, Math.min(data.bins.length - 1,
+      selected + (event.key === 'ArrowRight' ? 1 : -1)));
+    showBin();
+  });
 }
 
 async function loadDistribution() {
@@ -86,7 +89,7 @@ async function loadDistribution() {
     document.getElementById('summary').textContent =
       `All runs: ${data.total} (${data.scored} scored). Oldest half: ${data.half} (${data.olderScored} scored).`;
     message.textContent = data.scored ? '' : 'No scores recorded yet.';
-    if (data.scored) drawDistribution(data, document.getElementById('chart'), document.getElementById('detail'));
+    if (data.scored) await drawDistribution(data, document.getElementById('chart'), document.getElementById('detail'));
   } catch (error) {
     message.textContent = 'Unable to load score history. Please reload to try again.';
   }
