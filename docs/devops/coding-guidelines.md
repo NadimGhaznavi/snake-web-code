@@ -25,6 +25,7 @@ of the returned data belong in `AppDb`.
 and connection cleanup. It returns rows without interpreting application
 concepts such as high scores. The app does not call `DbMgr` directly.
 
-For the status publishing flow, the app obtains the high score through `AppDb`
-and uses that result to update the homepage. Page generation and Git
+For the publishing flow, the app obtains an `ExperimentStatus` through `AppDb`,
+which reads Snake Lab simulations and Ax3l events using the read-only DAL.
+It uses that result to regenerate the homepage. Page generation and Git
 publishing remain outside the DAL.

@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.8] - 2026-09-16 @ 03:57
+
+### Added
+
+- Generate a responsive Current Experiment panel with hostname, all-time and current golden scores, simulation and cycle counts, plain-text report names, and an inline SVG of the current golden run’s saved board.
+- Read Ax3l golden-configuration and round-robin events; install and upgrade grant the existing reader SELECT on `ax3l.events` and `ax3l.event_messages`.
+
 ## [0.2.7] - 2026-09-16 @ 03:38
 
 ### Changed
