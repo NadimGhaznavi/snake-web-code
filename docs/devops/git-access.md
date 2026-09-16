@@ -95,7 +95,7 @@ branch. Handle remote updates before retrying a rejected push; do not force-push
 The publisher locks its clone, requires a clean worktree on `PUBLISH_BRANCH`,
 fetches that branch from `origin`, and fast-forwards to remote changes before
 editing the page. It preserves front matter and other content, stages only
-`site/index.md`, and commits only when that file changes. It never
+`index.md`, and commits only when that file changes. It never
 force-pushes.
 
 If a push fails, the status commit remains locally and is retried on the next
