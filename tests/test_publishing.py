@@ -195,8 +195,8 @@ class PublishingTests(unittest.TestCase):
                                                                experiment_cycles=27)
         self.assertIn('published', self.activity.run())
         self.assertNotEqual(head, self.git(self.remote, 'rev-parse', 'main'))
-        self.assertIn('Simulations Submitted: 191', self.remote_page())
-        self.assertIn('Experiment Cycles: 27', self.remote_page())
+        self.assertIn('Simulations Run: 191', self.remote_page())
+        self.assertIn('Completed Experiments: 27', self.remote_page())
 
     def test_existing_contents_are_replaced(self):
         for content in (b'', b'# Custom homepage\n',
