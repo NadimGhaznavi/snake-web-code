@@ -195,8 +195,8 @@ class PublishingTests(unittest.TestCase):
                                                                experiment_cycles=27)
         self.assertIn('published', self.activity.run())
         self.assertNotEqual(head, self.git(self.remote, 'rev-parse', 'main'))
-        self.assertIn('Simulations Submitted: 191', self.remote_page())
-        self.assertIn('Experiment Cycles: 27', self.remote_page())
+        self.assertIn('Simulations Run: 191', self.remote_page())
+        self.assertIn('Completed Experiments: 27', self.remote_page())
 
     def test_existing_contents_are_replaced(self):
         for content in (b'', b'# Custom homepage\n',
@@ -329,6 +329,28 @@ class PublishingTests(unittest.TestCase):
 
 
 class ServiceTests(unittest.TestCase):
+    def test_next_publish_is_on_the_hour_or_half_hour(self):
+        for value, expected in [
+            ('2026-09-16T12:07:00', 1380),
+            ('2026-09-16T12:30:00', 1800),
+            ('2026-09-16T12:00:00', 1800),
+            ('2026-09-16T12:29:59.500000', 0.5),
+            ('2026-09-16T23:59:00', 60),
+        ]:
+            with self.subTest(now=value):
+                self.assertEqual(server.seconds_until_next_publish(
+                    datetime.fromisoformat(value)), expected)
+
+    def test_once_publishes_without_waiting(self):
+        with patch.object(sys, 'argv', ['snake-web', '--once']), \
+             patch.object(server.signal, 'signal'), \
+             patch.object(server.threading, 'Event') as event, \
+             patch.object(server, 'publish_once', return_value='published') as publish:
+            event.return_value.is_set.return_value = False
+            self.assertEqual(server.main(), 0)
+            event.return_value.wait.assert_not_called()
+            publish.assert_called_once()
+
     def test_once_failure_returns_nonzero(self):
         with patch.object(sys, 'argv', ['snake-web', '--once']), \
              patch.object(server.signal, 'signal'), \
@@ -339,16 +361,32 @@ class ServiceTests(unittest.TestCase):
     def test_service_retries_after_failure(self):
         stopped = Mock()
         stopped.is_set.return_value = False
-        stopped.wait.side_effect = [False, True]
+        stopped.wait.side_effect = [False, False, True]
         with patch.object(sys, 'argv', ['snake-web']), \
-             patch.object(server.DSnakeWeb, 'POLL_INTERVAL', 37), \
+             patch.object(server, 'datetime') as clock, \
              patch.object(server.signal, 'signal'), \
              patch.object(server.threading, 'Event', return_value=stopped), \
              patch.object(server, 'publish_once', side_effect=[RuntimeError('unavailable'), 'published']) as publish, \
              self.assertLogs(level='INFO'):
+            clock.now.side_effect = [datetime(2026, 9, 16, 12, 7),
+                                     datetime(2026, 9, 16, 12, 32),
+                                     datetime(2026, 9, 16, 13, 1)]
             self.assertEqual(server.main(), 0)
             self.assertEqual(publish.call_count, 2)
-            self.assertEqual([call.args for call in stopped.wait.call_args_list], [(37,), (37,)])
+            self.assertEqual([call.args for call in stopped.wait.call_args_list],
+                             [(1380,), (1680,), (1740,)])
+
+    def test_shutdown_while_waiting_does_not_publish(self):
+        stopped = Mock()
+        stopped.is_set.return_value = False
+        stopped.wait.return_value = True
+        with patch.object(sys, 'argv', ['snake-web']), \
+             patch.object(server.signal, 'signal'), \
+             patch.object(server.threading, 'Event', return_value=stopped), \
+             patch.object(server, 'publish_once') as publish:
+            self.assertEqual(server.main(), 0)
+            stopped.wait.assert_called_once()
+            publish.assert_not_called()
 
     def test_shutdown_signal_stops_loop(self):
         handlers = {}
@@ -362,6 +400,7 @@ class ServiceTests(unittest.TestCase):
 
         with patch.object(sys, 'argv', ['snake-web']), \
              patch.object(server.signal, 'signal', side_effect=register), \
+             patch.object(server.threading.Event, 'wait', return_value=False), \
              patch.object(server, 'publish_once', side_effect=publish) as run, \
              self.assertLogs(level='INFO'):
             self.assertEqual(server.main(), 0)

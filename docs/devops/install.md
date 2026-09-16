@@ -2,9 +2,10 @@
 
 Snake Web reads Snake Lab simulations and Ax3l experiment events, generates
 `index.md` at the root of the dedicated publishing clone, and
-commits and pushes the page when its content changes. It runs immediately on
-startup and then waits `DSnakeWeb.POLL_INTERVAL` seconds between checks
-(currently 300 seconds). It pushes when the generated page changes or a previous publication
+commits and pushes the page when its content changes. It publishes on the hour
+and half hour (`:00` and `:30`) in the server's local timezone, waiting for the
+next boundary on startup without polling the database in between. Each pass
+pushes when the generated content changes or a previous publication
 commit still needs to be pushed. It opens no listening ports.
 
 The host needs Python 3.10 or newer with `venv` support, Git, and systemd.
@@ -107,7 +108,10 @@ not. Upgrading reapplies the required SELECT grants to the existing reader.
 
 After configuring the service, run `sudo systemctl restart snake-web.service`
 and inspect `journalctl -u snake-web.service`. Missing configuration or publishing
-failures are logged and retried on the next interval.
+failures are logged and retried at the next half-hour boundary. Use
+`python -m snake_web.server --once` to publish immediately. If a publishing pass
+runs across a scheduled boundary, the service waits for the next future boundary
+instead of starting overlapping or catch-up passes.
 
 ## DEV validation on Sally
 

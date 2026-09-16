@@ -17,19 +17,56 @@ for (const csv of ['bad', 'id,high_score\n1,-2\n', 'id,high_score\n1,<script>\n'
   try { parseScores(csv); } catch (error) { rejected = true; }
   assert(rejected);
 }
-const elements = [];
-globalThis.document = {createElementNS(ns, tag) {
-  return {tag, attrs: {}, events: {}, children: [],
-    setAttribute(key, value) {this.attrs[key] = value;},
-    appendChild(child) {this.children.push(child);},
-    addEventListener(key, callback) {this.events[key] = callback;}};
-}};
+let plotted;
+let hovered;
+globalThis.Plotly = {
+  newPlot(chart, traces, layout, config) {
+    plotted = {traces, layout, config};
+    return Promise.resolve();
+  },
+  Fx: {hover(chart, points) {hovered = points;}},
+};
 const detail = {};
-const svg = {appendChild(node) {elements.push(node);}, removeAttribute(key) {this.removed = key;}};
-drawDistribution(same, svg, detail);
-const bars = elements.filter(node => node.tag === 'rect');
-assert(bars.length === 2 && bars[0].attrs.height === 390 && bars[1].attrs.height === 130);
-bars[1].events.focus();
-assert(detail.textContent === 'Score: 7; All runs: 3; Oldest half: 1');
-assert(svg.removed === 'hidden');
-print('Histogram parsing, cohorts, bins, and rendering checks passed');
+const chart = {
+  events: {},
+  removeAttribute(key) {this.removed = key;},
+  on(key, callback) {this.events[key] = callback;},
+  addEventListener(key, callback) {this.events[key] = callback;},
+};
+async function checkPlot() {
+  await drawDistribution(same, chart, detail);
+  const [all, older] = plotted.traces;
+  assert(all.type === 'bar' && older.type === 'bar');
+  assert(all.x[0] === 7 && older.x[0] === 7);
+  assert(all.y[0] === 3 && older.y[0] === 1);
+  assert(all.width[0] > older.width[0] && plotted.layout.barmode === 'overlay');
+  assert(chart.removed === 'hidden' && plotted.config.responsive);
+  chart.events.focus();
+  assert(detail.textContent === 'Score: 7; All runs: 3; Oldest half: 1');
+  await drawDistribution(data, chart, detail);
+  assert(plotted.traces[0].y.reduce((sum, value) => sum + value, 0) === 4);
+  assert(plotted.traces[1].y.reduce((sum, value) => sum + value, 0) === 1);
+  assert(plotted.traces[0].x.length === data.bins.length);
+  assert(plotted.traces[0].x[0] === 1);
+  chart.events.focus();
+  assert(detail.textContent === 'Score: 0–2; All runs: 1; Oldest half: 1');
+  chart.events.keydown({key: 'ArrowRight', preventDefault() {}});
+  assert(detail.textContent === 'Score: 3–5; All runs: 0; Oldest half: 0');
+  assert(hovered[0].pointNumber === 1);
+  chart.events.keydown({key: 'End', preventDefault() {}});
+  assert(hovered[0].pointNumber === data.bins.length - 1);
+  chart.events.keydown({key: 'ArrowRight', preventDefault() {}});
+  assert(hovered[0].pointNumber === data.bins.length - 1);
+  chart.events.plotly_hover({points: [{curveNumber: 1, pointNumber: 0}]});
+  assert(detail.textContent === 'Score: 0–2; All runs: 1; Oldest half: 1');
+  Plotly.newPlot = () => Promise.reject(new Error('Render failed'));
+  let rejected = false;
+  try { await drawDistribution(data, chart, detail); } catch (error) { rejected = true; }
+  assert(rejected);
+  print('Histogram parsing, cohorts, bins, and Plotly checks passed');
+}
+const loop = new imports.gi.GLib.MainLoop(null, false);
+let failure;
+checkPlot().catch(error => {failure = error;}).finally(() => loop.quit());
+loop.run();
+if (failure) throw failure;
