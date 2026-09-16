@@ -1,10 +1,13 @@
 """Generate and publish the complete current-experiment homepage."""
 
+from datetime import datetime
 from html import escape
+import re
 from pathlib import Path
 import socket
 from string import Template
 
+from snake_web.activity.GoldenHistory import append_golden_history, read_golden_history
 from snake_web.activity.HighscoreHistory import append_history, read_history
 from snake_web.activity.RunScoreHistory import append_scores
 from snake_web.activity.SimulationBoard import board_svg
@@ -14,7 +17,7 @@ from snake_web.entity.ExperimentStatus import ExperimentStatus
 _TEMPLATE = Template(Path(__file__).with_name('homepage.html').read_text())
 
 
-def render_status(status: ExperimentStatus, hostname: str) -> str:
+def render_status(status: ExperimentStatus, hostname: str, last_updated: str = '') -> str:
     def number(value, *, optional=False):
         if optional and value is None:
             return '—'
@@ -31,6 +34,7 @@ def render_status(status: ExperimentStatus, hostname: str) -> str:
         current_highscore=number(status.current_highscore, optional=True),
         simulations=number(status.simulations_submitted),
         cycles=number(status.experiment_cycles),
+        last_updated=escape(last_updated),
         board=board or '<p>No saved board is available for the current configuration.</p>',
     )
 
@@ -51,15 +55,31 @@ class PublishStatus:
             csv_data = append_history(existing, records)
             scores = append_scores(self._publisher.read_history(self._publisher.SCORES_PATH),
                                    self._appdb.get_run_scores())
+            golden_csv = self._publisher.read_history(self._publisher.GOLDEN_HISTORY_PATH)
+            golden_rows = read_golden_history(golden_csv)
+            golden_csv = append_golden_history(golden_csv, self._appdb.get_golden_configurations(
+                int(golden_rows[-1]['event_id']) if golden_rows else 0))
             assets = Path(__file__).parent / 'reports'
             report = (assets / 'experiment-highscores.html').read_text().replace(
                 '__TOTAL__', str(status.simulations_submitted))
-            changed = self._publisher.publish(render_status(status, socket.gethostname()), {
+            reports = {
+                self._publisher.GOLDEN_HISTORY_PATH: golden_csv,
+                self._publisher.GOLDEN_PATH: (assets / 'golden-configurations.html').read_text(),
+                self._publisher.GOLDEN_SCRIPT_PATH: (assets / 'golden-configurations.js').read_text(),
                 self._publisher.SCORES_PATH: scores,
                 self._publisher.DISTRIBUTION_PATH: (assets / 'score-distribution.html').read_text(),
                 self._publisher.DISTRIBUTION_SCRIPT_PATH: (assets / 'score-distribution.js').read_text(),
                 self._publisher.HISTORY_PATH: csv_data,
                 self._publisher.REPORT_PATH: report,
                 self._publisher.SCRIPT_PATH: (assets / 'experiment-highscores.js').read_text(),
-            })
+            }
+            previous_page = self._publisher.read_status()
+            match = re.search(r'<!-- last-updated -->([^<]*)<!-- /last-updated -->', previous_page)
+            previous_time = match.group(1) if match else ''
+            page = render_status(status, socket.gethostname(), previous_time)
+            if page != previous_page or any(
+                    self._publisher.read_history(name) != content for name, content in reports.items()):
+                page = render_status(status, socket.gethostname(),
+                                     datetime.now().astimezone().strftime('%Y-%m-%d %H:%M:%S %Z (%z)'))
+            changed = self._publisher.publish(page, reports)
         return f"Experiment homepage: {'published' if changed else 'unchanged'}"

@@ -58,3 +58,12 @@ and changed scores append observations; the browser uses the latest observation
 per ID and orders runs by ID. Repeated publication does not duplicate records.
 This reads all run IDs/scores each pass because the source has no score-change
 cursor. The existing simulation table grant suffices; no new grant is needed.
+
+The Golden Configurations table publishes every golden creation (initial/seed
+baselines and promotions) in `reports/data/golden-configurations.csv`. New event
+IDs append once; the browser displays newest timestamps first. Fields are event
+ID, timestamp, run ID, score, formatted parameter/change, and only the first
+choice's `message.reasoning_content`. Full responses, tool payloads, and raw
+decision messages are not exported. Expand Reason to read preserved multiline
+text. Configuration and simulation detail pages are not part of this slice.
+The existing Ax3l read grants cover this report.
