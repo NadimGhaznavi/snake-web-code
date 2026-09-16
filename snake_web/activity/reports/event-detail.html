@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Event Details</title>
+  <style>
+    body { margin: 2rem auto; padding: 0 1rem; max-width: 1400px; background: #101720; color: #d5dfeb; font: 16px/1.6 "Courier New", monospace; }
+    a { color: #80bdff; } nav { margin-bottom: 1rem; }
+    .table-scroll { overflow-x: auto; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { padding: .6rem; border: 1px solid #40566e; text-align: left; vertical-align: top; }
+    th { background: #151f2b; } td { overflow-wrap: anywhere; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; padding: 1rem; background: #151f2b; }
+    img { display: block; max-width: 100%; height: auto; } .board { max-width: 500px; }
+    select, input, button { font: inherit; margin: .3rem; padding: .3rem; }
+  </style>
+  <script src="report-csv.js" defer></script>
+  <script src="event-log.js" defer></script>
+</head>
+<body data-page="detail">
+  <h1 id="title">Event Details</h1>
+  <nav><a href="../">Home</a> · <a href="event-log.html">Event Log</a></nav>
+  <p id="message" role="status">Loading…</p>
+  <main id="detail"></main>
+  <noscript>Enable JavaScript to view the event log, or <a href="data/events.csv">download the sanitized CSV</a>.</noscript>
+</body>
+</html>

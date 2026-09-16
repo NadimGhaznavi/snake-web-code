@@ -19,9 +19,18 @@ class GitPublisher:
     GOLDEN_PATH = "reports/golden-configurations.html"
     GOLDEN_SCRIPT_PATH = "reports/golden-configurations.js"
     GOLDEN_HISTORY_PATH = "reports/data/golden-configurations.csv"
+    EVENT_PATH = "reports/event-log.html"
+    EVENT_DETAIL_PATH = "reports/event-detail.html"
+    EVENT_SCRIPT_PATH = "reports/event-log.js"
+    CSV_SCRIPT_PATH = "reports/report-csv.js"
+    EVENT_HISTORY_PATH = "reports/data/events.csv"
+    EVENT_SIMULATIONS_PATH = "reports/data/event-simulations.csv"
+    EVENT_CURSOR_PATH = "reports/data/event-export.json"
     OWNED_PATHS = (STATUS_PATH, REPORT_PATH, HISTORY_PATH, SCRIPT_PATH,
                    DISTRIBUTION_PATH, DISTRIBUTION_SCRIPT_PATH, SCORES_PATH,
-                   GOLDEN_PATH, GOLDEN_SCRIPT_PATH, GOLDEN_HISTORY_PATH)
+                   GOLDEN_PATH, GOLDEN_SCRIPT_PATH, GOLDEN_HISTORY_PATH,
+                   EVENT_PATH, EVENT_DETAIL_PATH, EVENT_SCRIPT_PATH, CSV_SCRIPT_PATH,
+                   EVENT_HISTORY_PATH, EVENT_SIMULATIONS_PATH, EVENT_CURSOR_PATH)
 
     def __init__(self, checkout, branch="main"):
         self.checkout = Path(checkout).resolve()
