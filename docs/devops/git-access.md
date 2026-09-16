@@ -96,7 +96,9 @@ The publisher locks its clone, requires a clean worktree on `PUBLISH_BRANCH`,
 fetches that branch from `origin`, and fast-forwards to remote changes before
 generating the homepage and reports. It stages only `index.md`,
 `reports/experiment-highscores.html`, `reports/experiment-highscores.js`, and
-`reports/data/experiment-highscores.csv`, committing all changed files together. It never
+`reports/data/experiment-highscores.csv`, `reports/score-distribution.html`,
+`reports/score-distribution.js`, and `reports/data/run-scores.csv`, committing
+all changed files together. It never
 force-pushes.
 
 If a push fails, the status commit remains locally and is retried on the next

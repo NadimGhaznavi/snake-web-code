@@ -45,3 +45,16 @@ Upgrade provisioning adds SELECT access to `ax3l.experiment_highscores`.
 The CSV assumes one continuous Ax3l database history with immutable accepted-score
 records; replacing/resetting that database requires deliberately starting a new
 export. Do not reuse an old CSV with reset event IDs.
+
+The Score Distribution Histogram compares all scored runs with the oldest half
+of submitted runs, matching Ax3l's shared bins (at most 40, minimum width 1).
+The cohort split includes unscored runs and rounds down odd totals; null scores
+are then excluded from bar counts. Zero remains a valid score.
+
+`reports/data/run-scores.csv` contains only numeric run IDs and nullable scores.
+Because scores change while runs execute, each pass compares the database's
+ID/score projection with the last exported observation for each run. New runs
+and changed scores append observations; the browser uses the latest observation
+per ID and orders runs by ID. Repeated publication does not duplicate records.
+This reads all run IDs/scores each pass because the source has no score-change
+cursor. The existing simulation table grant suffices; no new grant is needed.

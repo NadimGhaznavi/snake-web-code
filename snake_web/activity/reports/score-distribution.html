@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Score Distribution Histogram</title>
+  <style>
+    body { margin: 2rem auto; padding: 0 1rem; max-width: 1200px; background: #101720; color: #d5dfeb; font: 16px/1.6 "Courier New", monospace; }
+    a { color: #80bdff; }
+    svg { display: block; width: 100%; background: #151f2b; }
+    rect:focus { outline: none; stroke: white; stroke-width: 3; }
+    #detail { min-height: 3em; }
+  </style>
+  <script src="score-distribution.js" defer></script>
+</head>
+<body>
+  <h1>Score Distribution Histogram</h1>
+  <a href="../">Back to experiment</a>
+  <p id="summary"></p>
+  <p>Blue shows all scored runs. Orange shows the oldest half, using the same bins.
+    Runs are ordered by submission; for odd totals, the oldest half is rounded down.
+    Runs without a score count toward the split but are excluded from the bars.
+    Hover over or focus a bar for counts.</p>
+  <p><a href="data/run-scores.csv">Download score observations CSV</a> (the latest observation per run is plotted).</p>
+  <p id="message" role="status">Loading score history…</p>
+  <svg id="chart" viewBox="0 0 1000 500" role="img" aria-label="Score distribution for all runs and the oldest half" hidden></svg>
+  <p><span style="color:#4c9be8">■ All runs</span> &nbsp; <span style="color:#f09445">■ Oldest half</span></p>
+  <p id="detail" aria-live="polite"></p>
+  <noscript>Enable JavaScript to view the plot, or download the CSV history.</noscript>
+</body>
+</html>

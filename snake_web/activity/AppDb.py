@@ -98,3 +98,13 @@ class AppDb:
             FROM ax3l.experiment_highscores
             WHERE event_id > %s ORDER BY event_id
         """, (after_event_id,))
+
+    def get_run_scores(self) -> list[dict]:
+        """Read mutable scores in the same submission order as Ax3l's histogram.
+
+        There is no score-change cursor in the source schema. Compare this small
+        projection to the CSV so updates to earlier runs are never missed.
+        """
+        return self._db.query(
+            "SELECT id, high_score FROM simulation_runs ORDER BY id"
+        )
