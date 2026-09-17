@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Restyle Golden Configurations as a column of matching report boxes. Replace Configuration run with Config and JSON links; replace expandable reasons with Thoughts links. Both open detail pages with a Back link, and configuration exports include golden baselines.
+
 ## [2.0.1] - 2026-09-16 @ 20:51
 
 ### Changed

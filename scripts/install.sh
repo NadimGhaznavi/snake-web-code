@@ -65,6 +65,7 @@ code_files=(
     snake_web/activity/GoldenConfigurations.py
     snake_web/constants/ReportLabels.py
     snake_web/activity/reports/golden-configurations.html
+    snake_web/activity/reports/golden-detail.html
     snake_web/activity/reports/golden-configurations.js
     snake_web/activity/HighscoreHistory.py
     snake_web/activity/RunScoreHistory.py

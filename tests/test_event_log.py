@@ -50,6 +50,15 @@ class EventLogTests(unittest.TestCase):
                          'source', 'learning_rate', None, '1.0'))
         self.db.execute('INSERT INTO ax3l.event_messages VALUES (?, ?)', (id, content))
 
+    def test_golden_config_export_without_a_submission_event(self):
+        output = export_event_log(self.appdb, self.publisher, extra_run_ids=['run-1', 'run-1', ''])
+        rows = read_csv(output[self.publisher.EVENT_SIMULATIONS_PATH], SIMULATION_FIELDS)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]['run_id'], 'run-1')
+        self.assertEqual(json.loads(rows[0]['detail'])['configuration']['seed'], 1)
+        self.files.update(output)
+        self.assertEqual(export_event_log(self.appdb, self.publisher, extra_run_ids=['run-1']), output)
+
     def export(self):
         output = export_event_log(self.appdb, self.publisher)
         self.files.update(output)

@@ -79,9 +79,11 @@ class PublishStatus:
                 self._publisher.REPORT_PATH: report,
                 self._publisher.SCRIPT_PATH: (assets / 'experiment-highscores.js').read_text(),
             }
-            reports.update(export_event_log(self._appdb, self._publisher))
+            reports.update(export_event_log(self._appdb, self._publisher,
+                                           extra_run_ids=[row['run_id'] for row in read_golden_history(golden_csv)]))
             for path in (self._publisher.EVENT_PATH, self._publisher.EVENT_DETAIL_PATH,
-                         self._publisher.EVENT_SCRIPT_PATH, self._publisher.CSV_SCRIPT_PATH):
+                         self._publisher.EVENT_SCRIPT_PATH, self._publisher.CSV_SCRIPT_PATH,
+                         self._publisher.GOLDEN_DETAIL_PATH):
                 reports[path] = (assets / Path(path).name).read_text()
             previous_page = self._publisher.read_status()
             match = re.search(r'<!-- last-updated -->([^<]*)<!-- /last-updated -->', previous_page)
