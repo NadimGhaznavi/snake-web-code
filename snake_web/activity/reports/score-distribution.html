@@ -12,7 +12,8 @@
     p { margin: 0 0 .75rem; }
     p:last-child { margin-bottom: 0; }
     a { color: #80bdff; }
-    nav a { display: block; }
+    nav.report-box { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+    nav a:last-child { text-align: right; }
     #chart { width: 100%; height: 500px; background: #151f2b; }
     #chart:focus-visible { outline: 2px solid white; }
     #detail { min-height: 3em; margin: .75rem 0 0; }
@@ -40,8 +41,8 @@
     </section>
   </main>
   <nav class="report-box" aria-label="Report links">
-    <a href="data/run-scores.csv">Download CSV</a>
     <a href="../">Back</a>
+    <a href="data/run-scores.csv">Download CSV</a>
   </nav>
 </body>
 </html>
