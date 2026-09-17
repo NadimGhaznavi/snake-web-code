@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add Ax3l's Thinking beneath Experiment Highscores, displaying saved LLM reasoning for the same ranked simulations as Top 100, with matching navigation and publication timing.
+
 ## [1.6.2] - 2026-09-16 @ 20:36
 
 ### Changed

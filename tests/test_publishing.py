@@ -79,7 +79,9 @@ class PublishingTests(unittest.TestCase):
         self.assertEqual(self.git(self.repo, 'diff-tree', '--no-commit-id', '--name-only', '-r', 'HEAD').splitlines(), sorted(self.publisher.OWNED_PATHS))
 
     def test_top_runs_refresh_and_retry_failed_push(self):
-        self.appdb.get_top_runs.return_value = [dict(id=9, high_score=30)]
+        self.appdb.get_top_runs.return_value = [dict(
+            id=9, high_score=30,
+            response='{"choices":[{"message":{"reasoning_content":"The User asked me to tune this run."}}]}')]
         hook = self.remote / 'hooks/pre-receive'
         hook.write_text('#!/bin/sh\nexit 1\n')
         hook.chmod(0o755)
@@ -91,11 +93,19 @@ class PublishingTests(unittest.TestCase):
         self.assertEqual(head, self.git(self.remote, 'rev-parse', 'main'))
         self.assertIn('Run #9 - Score: 30', self.git(
             self.remote, 'show', 'main:' + self.publisher.TOP_RUNS_PATH))
+        thinking = self.git(self.remote, 'show', 'main:' + self.publisher.THINKING_PATH)
+        self.assertIn('Run #9 - Score: 30', thinking)
+        self.assertIn('The User asked me to tune this run.', thinking)
+        self.appdb.get_top_runs.reset_mock()
         self.appdb.get_top_runs.return_value = [dict(id=12, high_score=40)]
         self.activity.run()
+        self.appdb.get_top_runs.assert_called_once_with()
         page = self.git(self.remote, 'show', 'main:' + self.publisher.TOP_RUNS_PATH)
         self.assertIn('Run #12 - Score: 40', page)
         self.assertNotIn('Run #9', page)
+        thinking = self.git(self.remote, 'show', 'main:' + self.publisher.THINKING_PATH)
+        self.assertIn('Run #12 - Score: 40', thinking)
+        self.assertNotIn('Run #9', thinking)
 
     def test_history_appends_and_preserves_lower_seed_baselines(self):
         self.appdb.get_highscore_history.return_value = [

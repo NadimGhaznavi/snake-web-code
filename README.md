@@ -37,6 +37,13 @@ the simulation's numeric ID, not its rank. Missing boards show a placeholder;
 zero scores remain eligible and unscored runs are excluded. Each publication
 refreshes this report, using the existing simulation read grant.
 
+Ax3l's Thinking uses that same ranked list and publication pass, displaying the
+first-choice `message.reasoning_content` from the response associated with each
+simulation's first successful submission tool event. It keeps the same run/score
+navigation, including a placeholder for runs without saved reasoning. Only the
+reasoning text is exported, with line breaks preserved and HTML rendered as
+literal text. Existing Ax3l event read grants cover this lookup.
+
 The homepage links to Experiment Highscores. Each publishing pass reads the
 published CSV after synchronizing the site checkout, queries accepted scores
 with a newer event ID, and appends them. The first pass exports the full accepted
