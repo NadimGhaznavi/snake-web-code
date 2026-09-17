@@ -8,14 +8,18 @@
     * { box-sizing: border-box; }
     body { margin: 1rem auto; padding: 0 .75rem; max-width: 564px; background: #101720; color: #d5dfeb; font: 15px/1.6 "Courier New", monospace; }
     a { color: #80bdff; }
-    .ranked-run { margin-bottom: 1rem; padding: .75rem; border: 1px solid #40566e; }
+    .ranked-run, .report-links { width: 100%; max-width: 540px; min-width: 0; margin: 0 auto 1rem; padding: .75rem; border: 1px solid #40566e; background: #101720; }
     .ranked-run[hidden] { display: none; }
     .board { border: 1px solid #40566e; }
     .board p { padding: .75rem; }
     .simulation-board { display: block; width: 100%; height: auto; }
-    nav { display: flex; align-items: center; justify-content: space-between; gap: .25rem; margin-top: .5rem; }
-    nav span { text-align: center; overflow-wrap: anywhere; }
-    nav a { display: flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; }
+    .ranked-run nav { display: flex; align-items: center; justify-content: space-between; gap: .25rem; margin-top: .5rem; }
+    .ranked-run nav span { text-align: center; overflow-wrap: anywhere; }
+    .ranked-run nav button { flex-shrink: 0; min-width: 44px; min-height: 44px; padding: .25rem .75rem; border: 1px solid #80bdff; border-radius: 4px; background: #23364b; color: #d5dfeb; font: inherit; font-size: 1.2em; cursor: pointer; }
+    .ranked-run nav button:hover { background: #40566e; }
+    .ranked-run nav button:focus-visible { outline: 2px solid white; outline-offset: 2px; }
+    .ranked-run nav button:disabled { opacity: .5; cursor: default; }
+    .report-links a { display: block; }
   </style>
   <script src="top-100.js" defer></script>
 </head>
@@ -23,7 +27,9 @@
   <main aria-label="Top 100 simulations">
 ${runs}
   </main>
-  <a href="../">Home</a>
-  <noscript><p>All ranked boards are shown. Use the arrow links to jump between them.</p></noscript>
+  <nav class="report-links" aria-label="Report links">
+    <a href="../">Back</a>
+  </nav>
+  <noscript><p>All ranked boards are shown. Enable JavaScript to use the navigation buttons.</p></noscript>
 </body>
 </html>

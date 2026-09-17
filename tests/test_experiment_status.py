@@ -38,7 +38,7 @@ class RenderingTests(unittest.TestCase):
         page = render_status(self.status, 'wintermute')
         for text in ('Running on: wintermute', 'All-Time Highscore: 49',
                      'Current Highscore: 39', 'Simulations Run: 190',
-                     'Completed Experiments: 26', 'Score Distribution Histogram',
+                     'Completed Experiments: 26', 'Score Distribution',
                      'Experiment Highscores', 'Golden Configurations', 'Event Log'):
             self.assertIn(text, page)
         self.assertIn('reports/experiment-highscores.html', page)

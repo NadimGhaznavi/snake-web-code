@@ -13,7 +13,17 @@ function showRank(focus = false) {
   if (focus && boards[rank - 1]) boards[rank - 1].focus({preventScroll: true});
 }
 
+function enableRankButtons() {
+  document.querySelectorAll('button[data-rank]').forEach(button => {
+    button.disabled = false;
+    button.addEventListener('click', () => {
+      window.location.hash = `#rank-${button.dataset.rank}`;
+    });
+  });
+}
+
 if (typeof document !== 'undefined') {
+  enableRankButtons();
   showRank();
   window.addEventListener('hashchange', () => showRank(true));
 }

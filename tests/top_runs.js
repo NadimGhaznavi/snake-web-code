@@ -18,4 +18,15 @@ showRank(true);
 assert(!boards[0].hidden && boards[2].hidden);
 document.querySelectorAll = () => [];
 showRank(true);
+const buttons = [3, 2].map(rank => ({
+  dataset: {rank: String(rank)}, disabled: true,
+  addEventListener(name, callback) {this.click = callback;},
+}));
+document.querySelectorAll = () => buttons;
+enableRankButtons();
+assert(buttons.every(button => !button.disabled));
+buttons[0].click();
+assert(window.location.hash === '#rank-3');
+buttons[1].click();
+assert(window.location.hash === '#rank-2');
 print('Top 100 navigation checks passed');

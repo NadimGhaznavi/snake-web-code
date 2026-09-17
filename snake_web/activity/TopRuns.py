@@ -24,9 +24,9 @@ def render_top_runs(rows: list[dict]) -> str:
             f'aria-label="Rank {index + 1} of {len(rows)}">\n'
             f'<div class="board">{board}</div>\n'
             f'<nav aria-label="Ranked simulations">'
-            f'<a href="#rank-{previous}" aria-label="Previous ranked simulation">&lt;</a>'
+            f'<button type="button" data-rank="{previous}" aria-label="Previous ranked simulation" disabled>&lt;</button>'
             f'<span>Run #{run_id} - Score: {score}</span>'
-            f'<a href="#rank-{following}" aria-label="Next ranked simulation">&gt;</a>'
+            f'<button type="button" data-rank="{following}" aria-label="Next ranked simulation" disabled>&gt;</button>'
             f'</nav>\n</section>'
         )
     return _TEMPLATE.substitute(
