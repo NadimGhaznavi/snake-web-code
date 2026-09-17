@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.3] - 2026-09-17 @ 05:28
+
 ### Changed
 
 - Move Score Distribution totals below the chart explanation as separate “All simulations run” and “First-half simulations run” bullets.
