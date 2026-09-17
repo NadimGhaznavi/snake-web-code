@@ -86,8 +86,8 @@ async function loadDistribution() {
     const response = await fetch('data/run-scores.csv', {cache: 'no-store'});
     if (!response.ok) throw new Error('CSV request failed');
     const data = scoreDistribution(parseScores(await response.text()));
-    document.getElementById('summary').textContent =
-      `All runs: ${data.total} (${data.scored} scored). Oldest half: ${data.half} (${data.olderScored} scored).`;
+    document.getElementById('total-runs').textContent = data.total;
+    document.getElementById('first-half-runs').textContent = data.half;
     message.textContent = data.scored ? '' : 'No scores recorded yet.';
     if (data.scored) await drawDistribution(data, document.getElementById('chart'), document.getElementById('detail'));
   } catch (error) {

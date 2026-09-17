@@ -18,15 +18,17 @@ function parseHistory(csv) {
 
 async function drawHistory(rows, total, chart, detail) {
   const end = rows.reduce((max, row) => Math.max(max, row.simulations), Math.max(total, 1));
-  const labels = rows.map(row =>
-    `Simulations: ${row.simulations}; score: ${row.score}; seed: ${row.seed ?? 'unknown'}; event: ${row.id}`);
+  const seedChanges = rows.map((row, index) => index > 0 && row.seed !== null &&
+    rows[index - 1].seed !== null && row.seed !== rows[index - 1].seed);
+  const labels = rows.map((row, index) =>
+    `Simulations: ${row.simulations}; score: ${row.score}; seed: ${row.seed ?? 'unknown'}; event: ${row.id}${seedChanges[index] ? '; seed change' : ''}`);
   const last = rows[rows.length - 1];
   const traces = [{
     type: 'scatter', mode: 'lines+markers',
     x: rows.map(row => row.simulations), y: rows.map(row => row.score),
     text: labels, hovertemplate: '%{text}<extra></extra>',
     line: {color: '#4c9be8', width: 3, shape: 'spline', smoothing: 1},
-    marker: {color: '#f09445', size: 10},
+    marker: {color: seedChanges.map(changed => changed ? '#c792ea' : '#f09445'), size: 10},
   }];
   // Keep the final score level through the latest simulation count.
   if (end > last.simulations) traces.push({
