@@ -2,4 +2,4 @@ from typing import Final
 
 
 class DSnakeWeb:
-    VERSION: Final[str] = "1.5.2"
+    VERSION: Final[str] = "1.6.0"
