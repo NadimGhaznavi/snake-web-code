@@ -116,12 +116,12 @@ def simulation_detail(record):
     }, ensure_ascii=False, allow_nan=False)
 
 
-def export_event_log(appdb, publisher):
+def export_event_log(appdb, publisher, *, extra_run_ids=()):
     """Append events through a snapshot boundary and refresh mutable run details."""
     content = publisher.read_history(publisher.EVENT_HISTORY_PATH)
     old_events = read_csv(content, EVENT_FIELDS)
     previous = 0
-    run_ids = set()
+    run_ids = {run_id for run_id in extra_run_ids if run_id}
     for event in old_events:
         event_id = int(event['event_id'])
         if event_id <= previous or (event['category'], event['name']) not in EVENT_LABELS:

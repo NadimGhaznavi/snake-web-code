@@ -86,9 +86,12 @@ baselines and promotions) in `reports/data/golden-configurations.csv`. New event
 IDs append once; the browser displays newest timestamps first. Fields are event
 ID, timestamp, run ID, score, formatted parameter/change, and only the first
 choice's `message.reasoning_content`. Full responses, tool payloads, and raw
-decision messages are not exported. Expand Reason to read preserved multiline
-text. Configuration and simulation detail pages are not part of this slice.
-The existing Ax3l read grants cover this report.
+decision messages are not exported. The Config column's JSON link opens a
+formatted configuration page; the Reason column's Thoughts link opens the
+preserved multiline reasoning. Both detail views use matching report boxes
+and a Back link. Configuration exports include all golden run IDs, including
+baselines without a retained simulation-submission event. Existing read grants
+cover this report.
 
 ## Sanitized Event Log
 

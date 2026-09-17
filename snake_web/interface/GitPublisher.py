@@ -20,6 +20,7 @@ class GitPublisher:
     THINKING_PATH = "reports/ax3l-thinking.html"
     TOP_RUNS_SCRIPT_PATH = "reports/top-100.js"
     GOLDEN_PATH = "reports/golden-configurations.html"
+    GOLDEN_DETAIL_PATH = "reports/golden-detail.html"
     GOLDEN_SCRIPT_PATH = "reports/golden-configurations.js"
     GOLDEN_HISTORY_PATH = "reports/data/golden-configurations.csv"
     EVENT_PATH = "reports/event-log.html"
@@ -32,7 +33,7 @@ class GitPublisher:
     OWNED_PATHS = (STATUS_PATH, REPORT_PATH, HISTORY_PATH, SCRIPT_PATH,
                    DISTRIBUTION_PATH, DISTRIBUTION_SCRIPT_PATH, SCORES_PATH,
                    TOP_RUNS_PATH, TOP_RUNS_SCRIPT_PATH, THINKING_PATH,
-                   GOLDEN_PATH, GOLDEN_SCRIPT_PATH, GOLDEN_HISTORY_PATH,
+                   GOLDEN_PATH, GOLDEN_SCRIPT_PATH, GOLDEN_HISTORY_PATH, GOLDEN_DETAIL_PATH,
                    EVENT_PATH, EVENT_DETAIL_PATH, EVENT_SCRIPT_PATH, CSV_SCRIPT_PATH,
                    EVENT_HISTORY_PATH, EVENT_SIMULATIONS_PATH, EVENT_CURSOR_PATH)
 
