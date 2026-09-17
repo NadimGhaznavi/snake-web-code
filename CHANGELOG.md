@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Move Score Distribution totals below the chart explanation as separate “All simulations run” and “First-half simulations run” bullets.
+- Mark seed changes with purple points on Experiment Highscores, with a color explanation and seed-change hover details.
+- Explain Experiment Highscores as the score the Ax3l AI is trying to beat, with italicized wording describing random seed changes and lucky highscores.
+
 ## [2.1.2] - 2026-09-16 @ 21:24
 
 ## [2.1.1] - 2026-09-16 @ 21:19
