@@ -35,16 +35,16 @@ class TopRunsTests(unittest.TestCase):
         ])
         first = page.split('id="rank-1"', 1)[1].split('</section>', 1)[0]
         self.assertLess(first.index('<svg'), first.index('<nav'))
-        self.assertIn('href="#rank-3"', first)
-        self.assertIn('href="#rank-2"', first)
+        self.assertIn('data-rank="3"', first)
+        self.assertIn('data-rank="2"', first)
         self.assertIn('Run #42 - Score: 90', first)
         last = page.split('id="rank-3"', 1)[1].split('</section>', 1)[0]
-        self.assertIn('href="#rank-1"', last)
+        self.assertIn('data-rank="1"', last)
         self.assertEqual(page.count('No saved board is available'), 2)
 
     def test_empty_single_and_invalid_values(self):
         self.assertIn('No scored simulations', render_top_runs([]))
         page = render_top_runs([dict(id=5, high_score=0)])
-        self.assertEqual(page.count('href="#rank-1"'), 2)
+        self.assertEqual(page.count('data-rank="1"'), 2)
         with self.assertRaises(ValueError):
             render_top_runs([dict(id='<script>', high_score=10)])
