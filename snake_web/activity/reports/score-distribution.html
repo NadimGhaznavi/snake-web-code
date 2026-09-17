@@ -26,11 +26,14 @@
   <header class="report-box"><h1>Score Distribution</h1></header>
   <main>
     <section class="report-box" aria-label="About the score distribution">
-      <p id="summary"></p>
       <p>Blue shows all scored runs. Orange shows the oldest half, using the same bins.
         Runs are ordered by submission; for odd totals, the oldest half is rounded down.
         Runs without a score count toward the split but are excluded from the bars.
         The latest observation per run is plotted.</p>
+      <ul>
+        <li>All simulations run: <span id="total-runs"></span></li>
+        <li>First-half simulations run: <span id="first-half-runs"></span></li>
+      </ul>
       <p>Hover over a bar for counts, or focus the chart and use the left and right arrow keys.</p>
     </section>
     <section class="report-box" aria-label="Score distribution chart">
