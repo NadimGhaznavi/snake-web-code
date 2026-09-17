@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.2] - 2026-09-16 @ 20:36
+
 ### Changed
 
 - Use matching stacked boxes for the Score Distribution and Experiment Highscores pages, with Download CSV and Back links below the chart. Shorten the histogram title to Score Distribution.
