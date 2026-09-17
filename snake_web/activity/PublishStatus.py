@@ -64,8 +64,10 @@ class PublishStatus:
             assets = Path(__file__).parent / 'reports'
             report = (assets / 'experiment-highscores.html').read_text().replace(
                 '__TOTAL__', str(status.simulations_submitted))
+            top_runs = self._appdb.get_top_runs()
             reports = {
-                self._publisher.TOP_RUNS_PATH: render_top_runs(self._appdb.get_top_runs()),
+                self._publisher.TOP_RUNS_PATH: render_top_runs(top_runs),
+                self._publisher.THINKING_PATH: render_top_runs(top_runs, thinking=True),
                 self._publisher.TOP_RUNS_SCRIPT_PATH: (assets / 'top-100.js').read_text(),
                 self._publisher.GOLDEN_HISTORY_PATH: golden_csv,
                 self._publisher.GOLDEN_PATH: (assets / 'golden-configurations.html').read_text(),

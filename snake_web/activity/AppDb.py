@@ -112,11 +112,39 @@ class AppDb:
 
     def get_top_runs(self) -> list[dict]:
         """Rank scored simulations, using submission ID to break score ties."""
-        return self._db.query("""
-            SELECT id, high_score, high_score_snapshot FROM simulation_runs
+        rows = self._db.query("""
+            SELECT id, run_id, high_score, high_score_snapshot FROM simulation_runs
             WHERE high_score IS NOT NULL
             ORDER BY high_score DESC, id ASC LIMIT 100
         """)
+        if not rows:
+            return rows
+        placeholders = ', '.join('%s' for _ in rows)
+        # Match UUIDs as parameter values, avoiding cross-schema collation joins.
+        responses = self._db.query(f"""
+            WITH successful_tools AS (
+                SELECT e.event_id, e.process_id,
+                       JSON_UNQUOTE(JSON_EXTRACT(CASE WHEN JSON_VALID(m.content) THEN m.content ELSE '{{}}' END,
+                                                 '$.run_id')) AS run_id
+                FROM ax3l.events e JOIN ax3l.event_messages m USING (event_id)
+                WHERE e.category = 'Tool' AND e.name = 'tool_execution_completed'
+                  AND JSON_UNQUOTE(JSON_EXTRACT(CASE WHEN JSON_VALID(m.content) THEN m.content ELSE '{{}}' END,
+                                               '$.status')) = 'ok'
+            )
+            SELECT t.run_id, rm.content AS response
+            FROM successful_tools t
+            LEFT JOIN ax3l.events r ON r.event_id = (
+                SELECT MAX(event_id) FROM ax3l.events
+                WHERE process_id = t.process_id AND event_id < t.event_id
+                  AND category = 'Conversation' AND name = 'reply_received')
+            LEFT JOIN ax3l.event_messages rm ON rm.event_id = r.event_id
+            WHERE t.run_id IN ({placeholders})
+              AND t.event_id = (SELECT MIN(event_id) FROM successful_tools WHERE run_id = t.run_id)
+        """, tuple(row['run_id'] for row in rows))
+        by_run = {row['run_id']: row['response'] for row in responses}
+        for row in rows:
+            row['response'] = by_run.get(row['run_id'])
+        return rows
 
     def get_golden_configurations(self, after_event_id: int) -> list[dict]:
         """Include every baseline/promotion and the response that proposed its run."""
