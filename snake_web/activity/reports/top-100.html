@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Top 100 Simulations</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 1rem auto; padding: 0 .75rem; max-width: 564px; background: #101720; color: #d5dfeb; font: 15px/1.6 "Courier New", monospace; }
+    a { color: #80bdff; }
+    .ranked-run { margin-bottom: 1rem; padding: .75rem; border: 1px solid #40566e; }
+    .ranked-run[hidden] { display: none; }
+    .board { border: 1px solid #40566e; }
+    .board p { padding: .75rem; }
+    .simulation-board { display: block; width: 100%; height: auto; }
+    nav { display: flex; align-items: center; justify-content: space-between; gap: .25rem; margin-top: .5rem; }
+    nav span { text-align: center; overflow-wrap: anywhere; }
+    nav a { display: flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; }
+  </style>
+  <script src="top-100.js" defer></script>
+</head>
+<body>
+  <main aria-label="Top 100 simulations">
+${runs}
+  </main>
+  <a href="../">Home</a>
+  <noscript><p>All ranked boards are shown. Use the arrow links to jump between them.</p></noscript>
+</body>
+</html>

@@ -8,7 +8,6 @@ classes: wide
 <style>
 .snake-experiment { box-sizing: border-box; margin: 1rem 0; color: #d5dfeb; font: 15px/1.6 "Courier New", Courier, monospace; }
 .snake-experiment * { box-sizing: border-box; }
-.snake-experiment h3 { margin: 0 0 .75rem; padding: 0; border: 0; color: inherit; font: bold 1.1em/1.4 "Courier New", Courier, monospace; }
 .snake-experiment .experiment-board, .snake-experiment .experiment-reports, .snake-experiment .experiment-footer { width: 100%; max-width: 540px; min-width: 0; margin: 0 auto 1rem; padding: .75rem; border: 1px solid #40566e; background: #101720; }
 .snake-experiment .current-board { border: 1px solid #40566e; }
 .snake-experiment .simulation-board { display: block; width: 100%; height: auto; margin: auto; }
@@ -16,7 +15,8 @@ classes: wide
 .snake-experiment figcaption { margin: .75rem 0 0; font: inherit; }
 .snake-experiment .experiment-metrics, .snake-experiment .report-names { display: flex; flex-direction: column; gap: .35rem; margin: 0; padding: 0; list-style: none; }
 .snake-experiment li { margin: 0; padding: 0; font-size: 1em; overflow-wrap: anywhere; }
-.snake-experiment .report-names a { display: flex; align-items: center; min-height: 44px; }
+.snake-experiment .report-names { gap: 0; }
+.snake-experiment .report-names a { display: block; }
 .snake-experiment .experiment-footer { font: inherit; overflow-wrap: anywhere; }
 </style>
 
@@ -32,9 +32,9 @@ classes: wide
       </ul>
     </figcaption>
   </figure>
-  <section class="experiment-reports" aria-labelledby="experiment-reports-title">
-    <h3 id="experiment-reports-title">Reports</h3>
+  <section class="experiment-reports" aria-label="Reports">
     <ul class="report-names">
+      <li><a href="reports/top-100.html">Top 100</a></li>
       <li><a href="reports/score-distribution.html">Score Distribution Histogram</a></li>
       <li><a href="reports/experiment-highscores.html">Experiment Highscores</a></li>
       <li><a href="reports/golden-configurations.html">Golden Configurations</a></li>
