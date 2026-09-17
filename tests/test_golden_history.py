@@ -18,6 +18,7 @@ class GoldenHistoryTests(unittest.TestCase):
                                  category TEXT, name TEXT, process_id TEXT, parameter TEXT);
             CREATE TABLE event_messages (event_id INTEGER, content TEXT);
             CREATE TABLE experiment_highscores (event_id INTEGER PRIMARY KEY, score INTEGER);
+            CREATE TABLE simulation_runs (id INTEGER, run_id TEXT, high_score INTEGER, high_score_snapshot TEXT);
         ''')
 
         def event(id, category, name, process, content=None, parameter=None):
@@ -40,10 +41,16 @@ class GoldenHistoryTests(unittest.TestCase):
         event(11, 'Configuration', 'golden_config_created', 'seed-baseline')
         event(12, 'Tool', 'tool_execution_completed', 'unrelated', 'invalid JSON')
         event(13, 'Other', 'golden_config_created', 'wrong-category')
+        event(14, 'Conversation', 'reply_received', 'not-promoted', response)
+        event(15, 'Tool', 'tool_execution_completed', 'not-promoted', '{"status":"ok","run_id":"candidate"}')
+        event(16, 'Conversation', 'reply_received', 'conversation', 'later unrelated reply')
+        event(17, 'Tool', 'tool_execution_completed', 'conversation', '{"status":"ok","run_id":"winner"}')
         connection.executemany('INSERT INTO experiment_highscores VALUES (?, ?)', [(1, 0), (9, 55)])
+        connection.executemany('INSERT INTO simulation_runs VALUES (?, ?, ?, NULL)',
+                               [(1, 'baseline', 0), (2, 'winner', 55), (3, 'candidate', 30)])
 
         class Db:
-            def query(self, sql, params):
+            def query(self, sql, params=()):
                 return [dict(row) for row in connection.execute(sql.replace('ax3l.', '').replace('%s', '?'), params)]
 
         rows = AppDb(Db()).get_golden_configurations(0)
@@ -58,6 +65,11 @@ class GoldenHistoryTests(unittest.TestCase):
         for row in (rows[0], rows[2]):
             self.assertIsNone(row['reply_id'])
             self.assertIsNone(row['parameter'])
+
+        top = AppDb(Db()).get_top_runs()
+        self.assertEqual([row['run_id'] for row in top], ['winner', 'candidate', 'baseline'])
+        self.assertEqual([reasoning_content(row['response']) for row in top],
+                         ['winning reason', 'winning reason', ''])
 
     def test_missing_reasoning(self):
         for content in (None, '', 'invalid', 'null', '{}', '{"choices":[]}',
