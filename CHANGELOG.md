@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Use matching stacked boxes for the Score Distribution and Experiment Highscores pages, with Download CSV and Back links below the chart. Shorten the histogram title to Score Distribution.
+- Give Top 100 a boxed Back link and styled previous/next buttons below the board, preserving wrapping navigation.
+
 ## [1.6.0] - 2026-09-16 @ 20:20
 
 ### Added

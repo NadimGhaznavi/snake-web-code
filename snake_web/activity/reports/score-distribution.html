@@ -3,29 +3,45 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Score Distribution Histogram</title>
+  <title>Score Distribution</title>
   <style>
-    body { margin: 2rem auto; padding: 0 1rem; max-width: 1200px; background: #101720; color: #d5dfeb; font: 16px/1.6 "Courier New", monospace; }
+    * { box-sizing: border-box; }
+    body { margin: 1rem auto; padding: 0 .75rem; max-width: 564px; background: #101720; color: #d5dfeb; font: 15px/1.6 "Courier New", Courier, monospace; }
+    .report-box { width: 100%; max-width: 540px; min-width: 0; margin: 0 auto 1rem; padding: .75rem; border: 1px solid #40566e; background: #101720; overflow-wrap: anywhere; }
+    h1 { margin: 0; font-size: 1.5em; line-height: 1.4; }
+    p { margin: 0 0 .75rem; }
+    p:last-child { margin-bottom: 0; }
     a { color: #80bdff; }
+    nav a { display: block; }
     #chart { width: 100%; height: 500px; background: #151f2b; }
     #chart:focus-visible { outline: 2px solid white; }
-    #detail { min-height: 3em; }
+    #detail { min-height: 3em; margin: .75rem 0 0; }
+    #message:empty { display: none; }
   </style>
   <script src="https://cdn.plot.ly/plotly-4.0.0.min.js" charset="utf-8" defer></script>
   <script src="score-distribution.js" defer></script>
 </head>
 <body>
-  <h1>Score Distribution Histogram</h1>
-  <a href="../">Home</a>
-  <p id="summary"></p>
-  <p>Blue shows all scored runs. Orange shows the oldest half, using the same bins.
-    Runs are ordered by submission; for odd totals, the oldest half is rounded down.
-    Runs without a score count toward the split but are excluded from the bars.
-    Hover over a bar for counts, or focus the chart and use the left and right arrow keys.</p>
-  <p><a href="data/run-scores.csv">Download score observations CSV</a> (the latest observation per run is plotted).</p>
-  <p id="message" role="status">Loading score history…</p>
-  <div id="chart" tabindex="0" role="region" aria-label="Score distribution for all runs and the oldest half" aria-describedby="detail" hidden></div>
-  <p id="detail" aria-live="polite"></p>
-  <noscript>Enable JavaScript to view the plot, or download the CSV history.</noscript>
+  <header class="report-box"><h1>Score Distribution</h1></header>
+  <main>
+    <section class="report-box" aria-label="About the score distribution">
+      <p id="summary"></p>
+      <p>Blue shows all scored runs. Orange shows the oldest half, using the same bins.
+        Runs are ordered by submission; for odd totals, the oldest half is rounded down.
+        Runs without a score count toward the split but are excluded from the bars.
+        The latest observation per run is plotted.</p>
+      <p>Hover over a bar for counts, or focus the chart and use the left and right arrow keys.</p>
+    </section>
+    <section class="report-box" aria-label="Score distribution chart">
+      <p id="message" role="status">Loading score history…</p>
+      <div id="chart" tabindex="0" role="region" aria-label="Score distribution for all runs and the oldest half" aria-describedby="detail" hidden></div>
+      <p id="detail" aria-live="polite"></p>
+      <noscript>Enable JavaScript to view the plot, or download the CSV history.</noscript>
+    </section>
+  </main>
+  <nav class="report-box" aria-label="Report links">
+    <a href="data/run-scores.csv">Download CSV</a>
+    <a href="../">Back</a>
+  </nav>
 </body>
 </html>
