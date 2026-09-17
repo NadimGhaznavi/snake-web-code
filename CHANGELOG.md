@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.1] - 2026-09-16 @ 20:51
+
+### Changed
+
+- Place Back on the left and Download CSV on the right of the same footer row on Score Distribution and Experiment Highscores.
+
 ## [2.0.0] - 2026-09-16 @ 20:45
 
 ### Added
