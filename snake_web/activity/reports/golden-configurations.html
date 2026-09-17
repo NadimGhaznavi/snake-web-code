@@ -5,30 +5,44 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Golden Configurations</title>
   <style>
-    body { margin: 2rem auto; padding: 0 1rem; max-width: 1400px; background: #101720; color: #d5dfeb; font: 16px/1.6 "Courier New", monospace; }
+    * { box-sizing: border-box; }
+    body { margin: 1rem auto; padding: 0 .75rem; max-width: 564px; background: #101720; color: #d5dfeb; font: 15px/1.6 "Courier New", Courier, monospace; }
+    .report-box { width: 100%; max-width: 540px; min-width: 0; margin: 0 auto 1rem; padding: .75rem; border: 1px solid #40566e; background: #101720; overflow-wrap: anywhere; }
+    h1 { margin: 0; font-size: 1.5em; line-height: 1.4; }
+    p { margin: 0 0 .75rem; }
+    p:last-child { margin-bottom: 0; }
     a { color: #80bdff; }
+    nav.report-box { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+    nav a:last-child { text-align: right; }
     .table-scroll { overflow-x: auto; }
     table { border-collapse: collapse; width: 100%; }
-    th, td { padding: .6rem; border: 1px solid #40566e; text-align: left; vertical-align: top; }
+    th, td { padding: .4rem; border: 1px solid #40566e; text-align: left; vertical-align: top; }
     th { background: #151f2b; }
-    pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; min-width: 240px; max-width: 650px; }
-    summary { cursor: pointer; color: #80bdff; }
+    #message:empty { display: none; }
   </style>
   <script src="golden-configurations.js" defer></script>
 </head>
 <body>
-  <h1>Golden Configurations</h1>
-  <a href="../">Home</a>
-  <p>Accepted configurations, including initial and seed baselines, newest first.
-    Expand Reason to read the LLM reasoning associated with a proposal.</p>
-  <p><a href="data/golden-configurations.csv">Download golden history CSV</a></p>
-  <p id="message" role="status">Loading golden configurations…</p>
-  <div class="table-scroll">
-    <table aria-label="Golden configurations" hidden id="golden-table">
-      <thead><tr><th scope="col">Date</th><th scope="col">Time</th><th scope="col">Configuration run</th><th scope="col">High Score</th><th scope="col">Parameter</th><th scope="col">Change</th><th scope="col">Reason</th></tr></thead>
-      <tbody id="golden-rows"></tbody>
-    </table>
-  </div>
-  <noscript>Enable JavaScript to view the table, or download the CSV history.</noscript>
+  <header class="report-box"><h1>Golden Configurations</h1></header>
+  <main>
+    <section class="report-box" aria-label="About golden configurations">
+      <p>Accepted configurations, including initial and seed baselines, newest first.
+        Open JSON to view a configuration or Thoughts to read the saved LLM reasoning.</p>
+    </section>
+    <section class="report-box" aria-label="Golden configuration history">
+      <p id="message" role="status">Loading golden configurations…</p>
+      <div class="table-scroll">
+        <table aria-label="Golden configurations" hidden id="golden-table">
+          <thead><tr><th scope="col">Date</th><th scope="col">Time</th><th scope="col">Config</th><th scope="col">High Score</th><th scope="col">Parameter</th><th scope="col">Change</th><th scope="col">Reason</th></tr></thead>
+          <tbody id="golden-rows"></tbody>
+        </table>
+      </div>
+      <noscript>Enable JavaScript to view the table, or download the CSV history.</noscript>
+    </section>
+  </main>
+  <nav class="report-box" aria-label="Report links">
+    <a href="../">Back</a>
+    <a href="data/golden-configurations.csv">Download CSV</a>
+  </nav>
 </body>
 </html>

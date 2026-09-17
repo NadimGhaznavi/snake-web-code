@@ -12,27 +12,46 @@ class TopRunsTests(unittest.TestCase):
         db = sqlite3.connect(':memory:')
         self.addCleanup(db.close)
         db.row_factory = sqlite3.Row
-        db.execute('CREATE TABLE simulation_runs (id INTEGER, run_id TEXT, high_score INTEGER, high_score_snapshot TEXT)')
+        db.execute('CREATE TABLE simulation_runs (id INTEGER PRIMARY KEY, run_id TEXT UNIQUE NOT NULL, high_score INTEGER, high_score_snapshot TEXT)')
         db.executescript("""
             ATTACH DATABASE ':memory:' AS ax3l;
             CREATE TABLE ax3l.events (event_id INTEGER, category TEXT, name TEXT, process_id TEXT);
             CREATE TABLE ax3l.event_messages (event_id INTEGER, content TEXT);
         """)
         db.create_function('JSON_UNQUOTE', 1, lambda value: value)
-        db.executemany('INSERT INTO simulation_runs (id, high_score) VALUES (?, ?)',
-                       [(1, None), (2, 0), (3, 12), (4, 12), (5, 20)])
+        snapshots = {}
+
+        def insert_run(run_id, score):
+            snapshot = json.dumps({'board': {
+                'grid_size': [128, 3], 'snake_head': [run_id, 1],
+                'snake_body': [[run_id, 0]], 'food': [0, 2],
+            }})
+            snapshots[run_id] = snapshot
+            db.execute('INSERT INTO simulation_runs VALUES (?, ?, ?, ?)',
+                       (run_id, f'run-{run_id}', score, snapshot))
+
+        for run_id, score in [(1, None), (2, 0), (3, 12), (4, 12), (5, 20)]:
+            insert_run(run_id, score)
 
         class Database:
             def query(self, sql, params=()):
                 return [dict(row) for row in db.execute(sql.replace('%s', '?'), params)]
 
         app = AppDb(Database())
-        self.assertEqual([row['id'] for row in app.get_top_runs()], [5, 3, 4, 2])
-        db.executemany('INSERT INTO simulation_runs (id, high_score) VALUES (?, ?)',
-                       [(i, i) for i in range(6, 120)])
+        rows = app.get_top_runs()
+        self.assertEqual([row['id'] for row in rows], [5, 3, 4, 2])
+        # Equal scores must retain each run's own snapshot, not reuse a winner's.
+        self.assertNotEqual(rows[1]['high_score_snapshot'], rows[2]['high_score_snapshot'])
+        for i in range(6, 120):
+            insert_run(i, i)
         rows = app.get_top_runs()
         self.assertEqual(len(rows), 100)
         self.assertEqual(rows[0]['id'], 119)
+        self.assertEqual(len({row['id'] for row in rows}), 100)
+        self.assertEqual(len({row['high_score_snapshot'] for row in rows}), 100)
+        for row in rows:
+            self.assertEqual(row['run_id'], f"run-{row['id']}")
+            self.assertEqual(row['high_score_snapshot'], snapshots[row['id']])
 
     def test_boards_navigation_wrap_and_missing_snapshot(self):
         page = render_top_runs([

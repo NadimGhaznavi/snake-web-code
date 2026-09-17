@@ -17,10 +17,25 @@ globalThis.document = {createElement(tag) {
 const body = document.createElement('tbody');
 renderGoldenRows(records, body);
 assert(body.children.length === 2);
-assert(body.children[0].children[2].textContent === 'winner');
+const configLink = body.children[0].children[2].children[0];
+assert(configLink.textContent === 'JSON' && configLink.href === 'golden-detail.html?event=3&view=config');
 assert(body.children[1].children[3].textContent === '0');
-const details = body.children[0].children[6].children[0];
-assert(details.tag === 'details' && details.children[1].tag === 'pre');
-assert(details.children[1].textContent === records[1].reasoning);
+const reasonLink = body.children[0].children[6].children[0];
+assert(reasonLink.tag === 'a' && reasonLink.textContent === 'Thoughts');
+assert(reasonLink.href === 'golden-detail.html?event=3&view=reason');
 assert(body.children[1].children[6].children.length === 0);
+const detail = document.createElement('pre');
+renderGoldenDetail(records[1], 'reason', [], detail);
+assert(detail.textContent === records[1].reasoning);
+renderGoldenDetail(records[0], 'reason', [], detail);
+assert(detail.textContent.includes('No saved reasoning'));
+const simulations = [
+  {run_id: 'winner', detail: JSON.stringify({configuration: {seed: 1}})},
+  {run_id: 'unrelated', detail: JSON.stringify({configuration: {seed: 999}})},
+  {run_id: 'winner', detail: JSON.stringify({configuration: {seed: 2, training: {gamma: .9}}})},
+];
+renderGoldenDetail(records[1], 'config', simulations, detail);
+assert(detail.textContent === JSON.stringify({seed: 2, training: {gamma: .9}}, null, 2));
+renderGoldenDetail(records[0], 'config', simulations, detail);
+assert(detail.textContent.includes('No saved configuration'));
 print('Golden CSV quoting, ordering, and safe rendering checks passed');

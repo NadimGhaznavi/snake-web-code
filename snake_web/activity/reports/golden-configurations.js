@@ -43,22 +43,21 @@ function renderGoldenRows(records, body) {
   for (const record of ordered) {
     const row = document.createElement('tr');
     const [date, time = ''] = record.occurred_at.split(/[ T]/);
-    for (const value of [date, time.split('.')[0], record.run_id, record.high_score,
-                         record.parameter, record.change]) {
+    for (const [key, value] of [['date', date], ['time', time.split('.')[0]], ['config', record.run_id],
+                                ['score', record.high_score], ['parameter', record.parameter],
+                                ['change', record.change], ['reason', record.reasoning]]) {
       const cell = document.createElement('td');
-      cell.textContent = value;
+      if (key === 'config' || key === 'reason') {
+        if (value) {
+          const link = document.createElement('a');
+          link.textContent = key === 'config' ? 'JSON' : 'Thoughts';
+          link.href = `golden-detail.html?event=${encodeURIComponent(record.event_id)}&view=${key}`;
+          cell.appendChild(link);
+        } else cell.textContent = '—';
+      } else cell.textContent = value;
       row.appendChild(cell);
     }
-    const reason = document.createElement('td');
-    if (record.reasoning) {
-      const details = document.createElement('details');
-      const summary = document.createElement('summary');
-      summary.textContent = 'Reason';
-      const pre = document.createElement('pre');
-      pre.textContent = record.reasoning;
-      details.appendChild(summary); details.appendChild(pre); reason.appendChild(details);
-    }
-    row.appendChild(reason); body.appendChild(row);
+    body.appendChild(row);
   }
 }
 
@@ -75,4 +74,42 @@ async function loadGoldenHistory() {
     message.textContent = 'Unable to load golden configurations. Please reload to try again.';
   }
 }
-if (typeof document !== 'undefined') loadGoldenHistory();
+function renderGoldenDetail(record, view, simulations, detail) {
+  if (view === 'reason') {
+    detail.textContent = record.reasoning || 'No saved reasoning is available.';
+  } else {
+    const row = [...simulations].reverse().find(row => row.run_id === record.run_id);
+    const configuration = row ? JSON.parse(row.detail).configuration : null;
+    detail.textContent = configuration && Object.keys(configuration).length ?
+      JSON.stringify(configuration, null, 2) : 'No saved configuration is available for this run.';
+  }
+}
+
+async function loadGoldenDetail() {
+  const message = document.getElementById('message');
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const view = params.get('view');
+    if (!['config', 'reason'].includes(view)) throw new Error('Invalid detail view');
+    const response = await fetch('data/golden-configurations.csv', {cache: 'no-store'});
+    if (!response.ok) throw new Error('CSV request failed');
+    const record = parseGoldenCSV(await response.text()).find(row => row.event_id === params.get('event'));
+    if (!record) { message.textContent = 'Golden configuration not found.'; return; }
+    let simulations = [];
+    if (view === 'config') {
+      const response = await fetch('data/event-simulations.csv', {cache: 'no-store'});
+      if (!response.ok) throw new Error('Configuration request failed');
+      simulations = parseReportCSV(await response.text(), ['run_id', 'detail']);
+    }
+    document.getElementById('title').textContent = view === 'config' ? 'Configuration JSON' : 'LLM Reasoning';
+    renderGoldenDetail(record, view, simulations, document.getElementById('detail'));
+    message.textContent = '';
+  } catch (error) {
+    message.textContent = 'Unable to load golden configuration details. Please reload to try again.';
+  }
+}
+
+if (typeof document !== 'undefined') {
+  if (document.body.dataset.page === 'detail') loadGoldenDetail();
+  else loadGoldenHistory();
+}
