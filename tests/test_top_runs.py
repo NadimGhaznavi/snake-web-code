@@ -1,0 +1,50 @@
+import sqlite3
+import unittest
+
+from snake_web.activity.AppDb import AppDb
+from snake_web.activity.TopRuns import render_top_runs
+from test_experiment_status import SNAPSHOT
+
+
+class TopRunsTests(unittest.TestCase):
+    def test_ranking_limit_ties_null_and_zero(self):
+        db = sqlite3.connect(':memory:')
+        self.addCleanup(db.close)
+        db.row_factory = sqlite3.Row
+        db.execute('CREATE TABLE simulation_runs (id INTEGER, high_score INTEGER, high_score_snapshot TEXT)')
+        db.executemany('INSERT INTO simulation_runs VALUES (?, ?, NULL)',
+                       [(1, None), (2, 0), (3, 12), (4, 12), (5, 20)])
+
+        class Database:
+            def query(self, sql):
+                return [dict(row) for row in db.execute(sql)]
+
+        app = AppDb(Database())
+        self.assertEqual([row['id'] for row in app.get_top_runs()], [5, 3, 4, 2])
+        db.executemany('INSERT INTO simulation_runs VALUES (?, ?, NULL)',
+                       [(i, i) for i in range(6, 120)])
+        rows = app.get_top_runs()
+        self.assertEqual(len(rows), 100)
+        self.assertEqual(rows[0]['id'], 119)
+
+    def test_boards_navigation_wrap_and_missing_snapshot(self):
+        page = render_top_runs([
+            dict(id=42, high_score=90, high_score_snapshot=SNAPSHOT),
+            dict(id=7, high_score=80, high_score_snapshot=None),
+            dict(id=81, high_score=0, high_score_snapshot='invalid'),
+        ])
+        first = page.split('id="rank-1"', 1)[1].split('</section>', 1)[0]
+        self.assertLess(first.index('<svg'), first.index('<nav'))
+        self.assertIn('href="#rank-3"', first)
+        self.assertIn('href="#rank-2"', first)
+        self.assertIn('Run #42 - Score: 90', first)
+        last = page.split('id="rank-3"', 1)[1].split('</section>', 1)[0]
+        self.assertIn('href="#rank-1"', last)
+        self.assertEqual(page.count('No saved board is available'), 2)
+
+    def test_empty_single_and_invalid_values(self):
+        self.assertIn('No scored simulations', render_top_runs([]))
+        page = render_top_runs([dict(id=5, high_score=0)])
+        self.assertEqual(page.count('href="#rank-1"'), 2)
+        with self.assertRaises(ValueError):
+            render_top_runs([dict(id='<script>', high_score=10)])

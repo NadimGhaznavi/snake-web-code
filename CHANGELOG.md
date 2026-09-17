@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add Top 100 as the first report link, with saved simulation boards ranked by high score and wrapping previous/next navigation below each board.
+
+### Changed
+
+- Remove the Reports heading and extra spacing between homepage report links.
+
 ## [1.5.2] - 2026-09-16 @ 20:04
 
 ### Changed

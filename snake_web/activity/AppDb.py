@@ -110,6 +110,14 @@ class AppDb:
             "SELECT id, high_score FROM simulation_runs ORDER BY id"
         )
 
+    def get_top_runs(self) -> list[dict]:
+        """Rank scored simulations, using submission ID to break score ties."""
+        return self._db.query("""
+            SELECT id, high_score, high_score_snapshot FROM simulation_runs
+            WHERE high_score IS NOT NULL
+            ORDER BY high_score DESC, id ASC LIMIT 100
+        """)
+
     def get_golden_configurations(self, after_event_id: int) -> list[dict]:
         """Include every baseline/promotion and the response that proposed its run."""
         return self._db.query("""

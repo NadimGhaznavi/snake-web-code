@@ -51,6 +51,9 @@ code_files=(
     snake_web/activity/AppDb.py
     snake_web/activity/PublishStatus.py
     snake_web/activity/SimulationBoard.py
+    snake_web/activity/TopRuns.py
+    snake_web/activity/reports/top-100.html
+    snake_web/activity/reports/top-100.js
     snake_web/activity/homepage.html
     snake_web/activity/EventLogExport.py
     snake_web/constants/PublicEvents.py

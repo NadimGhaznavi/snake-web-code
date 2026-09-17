@@ -30,6 +30,13 @@ See [DevOps documentation](docs/devops/index.md) for all operational guides and 
 
 ## Static report slice
 
+Top 100 displays the saved boards for up to 100 scored simulations, ordered by
+high score descending and numeric run ID ascending for ties. Navigation below
+each board wraps between the first and last available rank. The run label uses
+the simulation's numeric ID, not its rank. Missing boards show a placeholder;
+zero scores remain eligible and unscored runs are excluded. Each publication
+refreshes this report, using the existing simulation read grant.
+
 The homepage links to Experiment Highscores. Each publishing pass reads the
 published CSV after synchronizing the site checkout, queries accepted scores
 with a newer event ID, and appends them. The first pass exports the full accepted

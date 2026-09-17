@@ -12,6 +12,7 @@ from snake_web.activity.GoldenHistory import append_golden_history, read_golden_
 from snake_web.activity.HighscoreHistory import append_history, read_history
 from snake_web.activity.RunScoreHistory import append_scores
 from snake_web.activity.SimulationBoard import board_svg
+from snake_web.activity.TopRuns import render_top_runs
 from snake_web.entity.ExperimentStatus import ExperimentStatus
 
 
@@ -64,6 +65,8 @@ class PublishStatus:
             report = (assets / 'experiment-highscores.html').read_text().replace(
                 '__TOTAL__', str(status.simulations_submitted))
             reports = {
+                self._publisher.TOP_RUNS_PATH: render_top_runs(self._appdb.get_top_runs()),
+                self._publisher.TOP_RUNS_SCRIPT_PATH: (assets / 'top-100.js').read_text(),
                 self._publisher.GOLDEN_HISTORY_PATH: golden_csv,
                 self._publisher.GOLDEN_PATH: (assets / 'golden-configurations.html').read_text(),
                 self._publisher.GOLDEN_SCRIPT_PATH: (assets / 'golden-configurations.js').read_text(),
