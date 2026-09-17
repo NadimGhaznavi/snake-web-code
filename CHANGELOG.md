@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-09-16 @ 20:20
+
 ### Added
 
 - Add Top 100 as the first report link, with saved simulation boards ranked by high score and wrapping previous/next navigation below each board.
