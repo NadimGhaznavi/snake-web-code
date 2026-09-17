@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.4] - 2026-09-17 @ 05:38
+
+### Changed
+
+- Simplify the Score Distribution explanation to “This chart shows the score distribution.” with “All simulations: Blue” and “Oldest half: Orange” bullets.
+
 ## [2.1.3] - 2026-09-17 @ 05:28
 
 ### Changed
