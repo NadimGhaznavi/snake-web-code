@@ -3,19 +3,35 @@ function assert(value) { if (!value) throw new Error('Assertion failed'); }
 const rows = parseScores('id,high_score\n1,\n2,0\n3,10\n4,10\n5,100\n3,20\n');
 assert(rows.length === 5 && rows[2].score === 20);
 const data = scoreDistribution(rows);
-assert(data.total === 5 && data.half === 2 && data.scored === 4 && data.olderScored === 1);
+assert(data.total === 5 && data.third === 1 && data.twoThirds === 3 && data.scored === 4 && data.olderScored === 2 && data.oldestScored === 0);
 assert(data.bins.length === 34 && data.bins[0].low === 0 && data.bins[0].high === 2);
 assert(data.bins[0].all === 1 && data.bins[0].older === 1);
 assert(data.bins.reduce((sum, bin) => sum + bin.all, 0) === 4);
-assert(data.bins.reduce((sum, bin) => sum + bin.older, 0) === 1);
+assert(data.bins.reduce((sum, bin) => sum + bin.older, 0) === 2);
 assert(scoreDistribution(parseScores('id,high_score\n1,\n')).bins.length === 0);
 assert(scoreDistribution([]).total === 0);
 const same = scoreDistribution(parseScores('id,high_score\n2,7\n1,7\n3,7\n'));
-assert(same.bins.length === 1 && same.bins[0].all === 3 && same.bins[0].older === 1);
+assert(same.bins.length === 1 && same.bins[0].all === 3 && same.bins[0].older === 2 && same.bins[0].oldest === 1);
 for (const csv of ['bad', 'id,high_score\n1,-2\n', 'id,high_score\n1,<script>\n']) {
   let rejected = false;
   try { parseScores(csv); } catch (error) { rejected = true; }
   assert(rejected);
+}
+// Match Ax3l's split before excluding nulls, including uneven and small totals.
+for (const [scores, third, twoThirds, oldestScored, olderScored] of [
+  [[0, null, 2, 100, 100, 9, 9], 2, 4, 1, 3],
+  [[0], 0, 0, 0, 0], [[1, 2], 0, 1, 0, 1],
+  [[7, 7, 7, 7], 1, 2, 1, 2],
+  [[7, 7, 7, 7, 7], 1, 3, 1, 3],
+  [[7, 7, 7, 7, 7, 7], 2, 4, 2, 4],
+  [[null, null], 0, 1, 0, 0],
+]) {
+  const result = scoreDistribution(scores.map((score, id) => ({id: id + 1, score})));
+  assert(result.third === third && result.twoThirds === twoThirds);
+  assert(result.oldestScored === oldestScored && result.olderScored === olderScored);
+  assert(result.bins.reduce((sum, bin) => sum + bin.oldest, 0) === oldestScored);
+  assert(result.bins.reduce((sum, bin) => sum + bin.older, 0) === olderScored);
+  assert(result.bins.every(bin => bin.oldest <= bin.older && bin.older <= bin.all));
 }
 let plotted;
 let hovered;
@@ -35,30 +51,32 @@ const chart = {
 };
 async function checkPlot() {
   await drawDistribution(same, chart, detail);
-  const [all, older] = plotted.traces;
-  assert(all.type === 'bar' && older.type === 'bar');
-  assert(all.x[0] === 7 && older.x[0] === 7);
-  assert(all.y[0] === 3 && older.y[0] === 1);
-  assert(all.width[0] > older.width[0] && plotted.layout.barmode === 'overlay');
+  const [all, older, oldest] = plotted.traces;
+  assert(plotted.traces.length === 3 && plotted.traces.every(trace => trace.type === 'bar'));
+  assert(all.name === 'All runs (3/3)' && older.name === 'Oldest two-thirds (2/3)' && oldest.name === 'Oldest third (1/3)');
+  assert(all.marker.color === '#4c9be8' && older.marker.color === '#f09445' && oldest.marker.color === '#b86b6b');
+  assert(all.x[0] === 7 && older.x[0] === 7 && oldest.x[0] === 7);
+  assert(all.y[0] === 3 && older.y[0] === 2 && oldest.y[0] === 1);
+  assert(all.width[0] > older.width[0] && older.width[0] > oldest.width[0] && plotted.layout.barmode === 'overlay');
   assert(chart.removed === 'hidden' && plotted.config.responsive);
   chart.events.focus();
-  assert(detail.textContent === 'Score: 7; All runs: 3; Oldest half: 1');
+  assert(detail.textContent === 'Score: 7; All runs (3/3): 3; Oldest two-thirds (2/3): 2; Oldest third (1/3): 1');
   await drawDistribution(data, chart, detail);
   assert(plotted.traces[0].y.reduce((sum, value) => sum + value, 0) === 4);
-  assert(plotted.traces[1].y.reduce((sum, value) => sum + value, 0) === 1);
+  assert(plotted.traces[1].y.reduce((sum, value) => sum + value, 0) === 2);
   assert(plotted.traces[0].x.length === data.bins.length);
   assert(plotted.traces[0].x[0] === 1);
   chart.events.focus();
-  assert(detail.textContent === 'Score: 0–2; All runs: 1; Oldest half: 1');
+  assert(detail.textContent === 'Score: 0–2; All runs (3/3): 1; Oldest two-thirds (2/3): 1; Oldest third (1/3): 0');
   chart.events.keydown({key: 'ArrowRight', preventDefault() {}});
-  assert(detail.textContent === 'Score: 3–5; All runs: 0; Oldest half: 0');
+  assert(detail.textContent === 'Score: 3–5; All runs (3/3): 0; Oldest two-thirds (2/3): 0; Oldest third (1/3): 0');
   assert(hovered[0].pointNumber === 1);
   chart.events.keydown({key: 'End', preventDefault() {}});
   assert(hovered[0].pointNumber === data.bins.length - 1);
   chart.events.keydown({key: 'ArrowRight', preventDefault() {}});
   assert(hovered[0].pointNumber === data.bins.length - 1);
   chart.events.plotly_hover({points: [{curveNumber: 1, pointNumber: 0}]});
-  assert(detail.textContent === 'Score: 0–2; All runs: 1; Oldest half: 1');
+  assert(detail.textContent === 'Score: 0–2; All runs (3/3): 1; Oldest two-thirds (2/3): 1; Oldest third (1/3): 0');
   Plotly.newPlot = () => Promise.reject(new Error('Render failed'));
   let rejected = false;
   try { await drawDistribution(data, chart, detail); } catch (error) { rejected = true; }

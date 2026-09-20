@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-09-20 @ 16:58
+
+### Changed
+
+- Match Ax3l’s cumulative score distribution groups: all runs, oldest two-thirds, and oldest third, with shared bins, matching colors, and counts in hover and keyboard details.
+
 ## [2.2.0] - 2026-09-19 @ 15:24
 
 ### Added

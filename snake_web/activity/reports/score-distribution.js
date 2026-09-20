@@ -20,30 +20,35 @@ function parseScores(csv) {
 }
 
 function scoreDistribution(rows) {
-  const half = Math.floor(rows.length / 2);
+  const third = Math.floor(rows.length / 3);
+  const twoThirds = Math.floor(2 * rows.length / 3);
   const all = rows.filter(row => row.score !== null);
-  const older = rows.slice(0, half).filter(row => row.score !== null);
-  const result = {total: rows.length, half, scored: all.length, olderScored: older.length, bins: []};
+  const older = rows.slice(0, twoThirds).filter(row => row.score !== null);
+  const oldest = rows.slice(0, third).filter(row => row.score !== null);
+  const result = {total: rows.length, third, twoThirds, scored: all.length,
+                  olderScored: older.length, oldestScored: oldest.length, bins: []};
   if (!all.length) return result;
   const low = all.reduce((value, row) => Math.min(value, row.score), Infinity);
   const high = all.reduce((value, row) => Math.max(value, row.score), 0);
   const size = Math.max(1, Math.ceil((high - low + 1) / 40));
   result.bins = Array.from({length: Math.floor((high - low) / size) + 1}, (_, index) => ({
-    low: low + index * size, high: low + (index + 1) * size - 1, all: 0, older: 0,
+    low: low + index * size, high: low + (index + 1) * size - 1, all: 0, older: 0, oldest: 0,
   }));
   for (const row of all) result.bins[Math.floor((row.score - low) / size)].all++;
   for (const row of older) result.bins[Math.floor((row.score - low) / size)].older++;
+  for (const row of oldest) result.bins[Math.floor((row.score - low) / size)].oldest++;
   return result;
 }
 
 async function drawDistribution(data, chart, detail) {
   const labels = data.bins.map(bin => bin.low === bin.high ? String(bin.low) : `${bin.low}–${bin.high}`);
   const descriptions = data.bins.map((bin, index) =>
-    `Score: ${labels[index]}; All runs: ${bin.all}; Oldest half: ${bin.older}`);
+    `Score: ${labels[index]}; All runs (3/3): ${bin.all}; Oldest two-thirds (2/3): ${bin.older}; Oldest third (1/3): ${bin.oldest}`);
   const centers = data.bins.map(bin => (bin.low + bin.high) / 2);
-  // Plot precomputed counts so both cohorts retain exactly the same bins.
-  const traces = [['all', 'All runs', '#4c9be8', .92],
-                  ['older', 'Oldest half', '#f09445', .52]].map(([key, name, color, width]) => ({
+  // Plot precomputed counts so all three cohorts retain exactly the same bins.
+  const traces = [['all', 'All runs (3/3)', '#4c9be8', .92],
+                  ['older', 'Oldest two-thirds (2/3)', '#f09445', .62],
+                  ['oldest', 'Oldest third (1/3)', '#b86b6b', .32]].map(([key, name, color, width]) => ({
     type: 'bar', name, x: centers, y: data.bins.map(bin => bin[key]),
     width: data.bins.map(bin => (bin.high - bin.low + 1) * width),
     marker: {color}, text: descriptions, textposition: 'none',
@@ -53,8 +58,8 @@ async function drawDistribution(data, chart, detail) {
   await Plotly.newPlot(chart, traces, {
     barmode: 'overlay', paper_bgcolor: '#151f2b', plot_bgcolor: '#151f2b',
     font: {color: '#d5dfeb', family: 'Courier New, monospace'},
-    margin: {l: 65, r: 20, t: 65, b: 75},
-    legend: {orientation: 'h', x: 0, y: 1.15},
+    margin: {l: 65, r: 20, t: 30, b: 140},
+    legend: {orientation: 'h', x: 0, y: -.25, yanchor: 'top'},
     xaxis: {title: {text: 'Run high score'}, gridcolor: '#40566e', automargin: true},
     yaxis: {title: {text: 'Number of runs'}, rangemode: 'tozero',
             tickformat: ',d', gridcolor: '#40566e', automargin: true},
@@ -87,7 +92,8 @@ async function loadDistribution() {
     if (!response.ok) throw new Error('CSV request failed');
     const data = scoreDistribution(parseScores(await response.text()));
     document.getElementById('total-runs').textContent = data.total;
-    document.getElementById('first-half-runs').textContent = data.half;
+    document.getElementById('oldest-two-thirds-runs').textContent = data.twoThirds;
+    document.getElementById('oldest-third-runs').textContent = data.third;
     message.textContent = data.scored ? '' : 'No scores recorded yet.';
     if (data.scored) await drawDistribution(data, document.getElementById('chart'), document.getElementById('detail'));
   } catch (error) {
