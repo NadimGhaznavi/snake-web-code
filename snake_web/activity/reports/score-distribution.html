@@ -26,16 +26,12 @@
   <header class="report-box"><h1>Score Distribution</h1></header>
   <main>
     <section class="report-box" aria-label="About the score distribution">
-      <p>This chart shows how many times a score was achieved by the Ax3l AI.</p>
+      <p>This chart shows how many times a score was achieved across simulation runs.</p>
       <ul>
-        <li>All simulations run (3/3): <span id="total-runs"></span></li>
-        <li>Oldest two-thirds simulations run (2/3): <span id="oldest-two-thirds-runs"></span></li>
-        <li>Oldest third simulations run (1/3): <span id="oldest-third-runs"></span></li>
-        <li>All simulations: Blue</li>
-        <li>Oldest two-thirds: Orange</li>
-        <li>Oldest third: Muted red</li>
+        <li>All simulations: <span id="total-runs"></span></li>
+        <li>Old simulations, 2/3 of the total: <span id="oldest-two-thirds-runs"></span></li>
+        <li>Oldest simulations, 1/3 of the total: <span id="oldest-third-runs"></span></li>
       </ul>
-      <p>These groups are cumulative and use the same score bins. Runs are ordered by submission; third boundaries are rounded down before excluding unscored runs.</p>
       <p>Hover over a bar for counts, or focus the chart and use the left and right arrow keys.</p>
     </section>
     <section class="report-box" aria-label="Score distribution chart">
