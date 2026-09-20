@@ -65,11 +65,11 @@ The CSV assumes one continuous Ax3l database history with immutable accepted-sco
 records; replacing/resetting that database requires deliberately starting a new
 export. Do not reuse an old CSV with reset event IDs.
 
-The Score Distribution Histogram compares all scored runs with the oldest half
-of submitted runs, matching Ax3l's shared bins (at most 40, minimum width 1).
-The cohort split includes unscored runs and rounds down odd totals; null scores
+The Score Distribution Histogram compares all scored runs with the oldest two-thirds
+and oldest third of submitted runs, matching Ax3l's shared bins (at most 40, minimum width 1).
+The cumulative cohort boundaries include unscored runs and round down; null scores
 are then excluded from bar counts. Zero remains a valid score.
-Plotly renders the precomputed bins as overlapping blue and orange bars, with
+Plotly renders the precomputed bins as overlapping blue, orange, and muted-red bars, with
 hover counts and arrow-key navigation. It uses the same version-pinned CDN as
 Experiment Highscores.
 
