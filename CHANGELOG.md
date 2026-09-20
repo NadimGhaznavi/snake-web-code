@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Wording on the *score distribution page*.
+
 ## [2.3.0] - 2026-09-20 @ 16:58
 
 ### Changed
