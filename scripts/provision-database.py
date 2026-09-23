@@ -61,6 +61,7 @@ def provision(admin, socket_path, credentials=CREDENTIALS, legacy_credentials=No
             # Require the source schema to exist; never install Snake Lab's schema here.
             cursor.execute('SELECT run_id FROM snakelab.configurations LIMIT 0')
             cursor.execute('SELECT high_score, high_score_snapshot FROM snakelab.simulation_runs LIMIT 0')
+            cursor.execute('SELECT steps FROM snakelab.simulation_episodes LIMIT 0')
             cursor.execute('SELECT event_id, occurred_at, category, name, process_id FROM ax3l.events LIMIT 0')
             cursor.execute('SELECT event_id, content FROM ax3l.event_messages LIMIT 0')
             cursor.execute('SELECT event_id, simulations, score, seed FROM ax3l.experiment_highscores LIMIT 0')
@@ -96,7 +97,7 @@ def provision(admin, socket_path, credentials=CREDENTIALS, legacy_credentials=No
             cursor.execute('ALTER USER %s@%s IDENTIFIED BY %s',
                            (DB_USER, 'localhost', values['DB_PASSWORD']))
             cursor.execute('REVOKE ALL PRIVILEGES, GRANT OPTION FROM %s@%s', (DB_USER, 'localhost'))
-            for table in ('snakelab.simulation_runs', 'snakelab.configurations', 'ax3l.events', 'ax3l.event_messages', 'ax3l.experiment_highscores'):
+            for table in ('snakelab.simulation_runs', 'snakelab.simulation_episodes', 'snakelab.configurations', 'ax3l.events', 'ax3l.event_messages', 'ax3l.experiment_highscores'):
                 cursor.execute(f'GRANT SELECT ON {table} TO %s@%s', (DB_USER, 'localhost'))
         with pymysql.connect(unix_socket=socket_path, user=DB_USER, password=values['DB_PASSWORD'],
                              database=DB_NAME, connect_timeout=10) as reader:

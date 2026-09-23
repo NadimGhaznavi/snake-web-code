@@ -10,3 +10,5 @@ class ExperimentStatus:
     simulations_submitted: int
     experiment_cycles: int
     snapshot: str | dict | None = None
+    games_played: int = 0
+    moves_made: int = 0

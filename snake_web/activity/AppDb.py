@@ -55,6 +55,10 @@ class AppDb:
             SELECT MAX(high_score) AS high_score, COUNT(*) AS simulations
             FROM simulation_runs
         """)[0]
+        episodes = self._db.query("""
+            SELECT COUNT(*) AS games_played, COALESCE(SUM(steps), 0) AS moves_made
+            FROM simulation_episodes
+        """)[0]
         # Match the report server's latest golden creation, not the newest run
         # or the all-time winner (which may belong to an earlier seed).
         golden = self._db.query("""
@@ -89,6 +93,8 @@ class AppDb:
             current_highscore=current[0]['high_score'] if current else None,
             simulations_submitted=totals['simulations'],
             experiment_cycles=completed_cycles(comparisons),
+            games_played=int(episodes['games_played']),
+            moves_made=int(episodes['moves_made']),
             snapshot=current[0]['high_score_snapshot'] if current else None,
         )
 

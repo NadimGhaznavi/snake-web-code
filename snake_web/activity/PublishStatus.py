@@ -20,12 +20,12 @@ _TEMPLATE = Template(Path(__file__).with_name('homepage.html').read_text())
 
 
 def render_status(status: ExperimentStatus, hostname: str, last_updated: str = '') -> str:
-    def number(value, *, optional=False):
+    def number(value, *, optional=False, commas=False):
         if optional and value is None:
             return '—'
         if type(value) is not int or value < 0:
             raise ValueError('Experiment metrics must be nonnegative integers')
-        return str(value)
+        return format(value, ',') if commas else str(value)
 
     board = board_svg(status.snapshot)
     return _TEMPLATE.substitute(
@@ -36,6 +36,8 @@ def render_status(status: ExperimentStatus, hostname: str, last_updated: str = '
         current_highscore=number(status.current_highscore, optional=True),
         simulations=number(status.simulations_submitted),
         cycles=number(status.experiment_cycles),
+        games_played=number(status.games_played, commas=True),
+        moves_made=number(status.moves_made, commas=True),
         last_updated=escape(last_updated),
         board=board or '<p>No saved board is available for the current configuration.</p>',
     )

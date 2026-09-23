@@ -75,6 +75,7 @@ class MigrationTests(unittest.TestCase):
         grants = [call.args[0] for call in calls if call.args[0].startswith('GRANT ')]
         self.assertEqual(set(grants), {
             'GRANT SELECT ON snakelab.simulation_runs TO %s@%s',
+            'GRANT SELECT ON snakelab.simulation_episodes TO %s@%s',
             'GRANT SELECT ON snakelab.configurations TO %s@%s',
             'GRANT SELECT ON ax3l.events TO %s@%s',
             'GRANT SELECT ON ax3l.event_messages TO %s@%s',
@@ -87,14 +88,14 @@ class MigrationTests(unittest.TestCase):
             self.provision()
         self.assertFalse(self.destination.exists())
         self.assertEqual(self.legacy.read_text(), 'DB_USER=snake_lab\n')
-        self.assertEqual(self.admin.cursor.return_value.__enter__.return_value.execute.call_count, 6)
+        self.assertEqual(self.admin.cursor.return_value.__enter__.return_value.execute.call_count, 7)
 
     def test_socket_mismatch_does_not_copy_or_change_account(self):
         self.legacy.write_text(self.original.replace('snake-web-test.sock', 'other.sock'))
         with self.assertRaisesRegex(RuntimeError, 'Saved socket differs'):
             self.provision()
         self.assertFalse(self.destination.exists())
-        self.assertEqual(self.admin.cursor.return_value.__enter__.return_value.execute.call_count, 6)
+        self.assertEqual(self.admin.cursor.return_value.__enter__.return_value.execute.call_count, 7)
 
 
 @unittest.skipUnless(os.environ.get('SNAKE_WEB_PROVISION_TEST_SOCKET'), 'requires isolated provisioning DB')

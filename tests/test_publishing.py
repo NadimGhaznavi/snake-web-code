@@ -228,6 +228,20 @@ class PublishingTests(unittest.TestCase):
         self.assertIn('Simulations Run: 191', self.remote_page())
         self.assertIn('Completed Experiments: 27', self.remote_page())
 
+    def test_episode_metrics_publish_independently(self):
+        self.activity.run()
+        status = STATUS
+        for field, value, text in (('games_played', 1234, 'Games Played: 1,234'),
+                                   ('moves_made', 567890, 'Moves Made: 567,890')):
+            with self.subTest(field=field):
+                head = self.git(self.remote, 'rev-parse', 'main')
+                status = replace(status, **{field: value})
+                self.appdb.get_experiment_status.return_value = status
+                self.assertIn('published', self.activity.run())
+                self.assertNotEqual(head, self.git(self.remote, 'rev-parse', 'main'))
+                self.assertIn(text, self.remote_page())
+                self.assertIn('unchanged', self.activity.run())
+
     def test_existing_contents_are_replaced(self):
         for content in (b'', b'# Custom homepage\n',
                         b'- Current highscore: 1\n- Current highscore: 2\n',
