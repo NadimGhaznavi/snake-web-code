@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Rename the homepage metric from “Simulations Run” to “Simulation Runs”.
+
 ## [2.3.2] - 2026-09-23 @ 17:23
 
 ### Added

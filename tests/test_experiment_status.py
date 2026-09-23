@@ -38,7 +38,7 @@ class RenderingTests(unittest.TestCase):
     def test_metrics_plain_reports_and_real_snapshot(self):
         page = render_status(self.status, 'wintermute')
         for text in ('Running on: wintermute', 'All-Time Highscore: 49',
-                     'Current Highscore: 39', 'Simulations Run: 190',
+                     'Current Highscore: 39', 'Simulation Runs: 190',
                      'Completed Experiments: 26', 'Score Distribution',
                      'Games Played: 1,234', 'Moves Made: 567,890',
                      'Experiment Highscores', 'Golden Configurations', 'Event Log'):
