@@ -225,7 +225,7 @@ class PublishingTests(unittest.TestCase):
                                                                experiment_cycles=27)
         self.assertIn('published', self.activity.run())
         self.assertNotEqual(head, self.git(self.remote, 'rev-parse', 'main'))
-        self.assertIn('Simulations Run: 191', self.remote_page())
+        self.assertIn('Simulation Runs: 191', self.remote_page())
         self.assertIn('Completed Experiments: 27', self.remote_page())
 
     def test_episode_metrics_publish_independently(self):
