@@ -41,7 +41,7 @@ The service starts at boot.
 
 Install and upgrade automatically create Snake Web's own MariaDB account,
 `snake_web_reader@localhost`, with a generated password and only `SELECT` on
-`snakelab.simulation_runs`, `snakelab.configurations`, `ax3l.events`, `ax3l.event_messages`, and
+`snakelab.simulation_runs`, `snakelab.simulation_episodes`, `snakelab.configurations`, `ax3l.events`, `ax3l.event_messages`, and
 `ax3l.experiment_highscores`. They discover the local MariaDB socket using the
 `mariadb` client and perform provisioning with local root access. They never
 reuse or modify the Snake Lab or Ax3l application accounts and never create or
@@ -98,6 +98,10 @@ Histogram CSV records are score observations: subsequent rows for the same run
 update its score. The browser counts each run once using its latest observation.
 
 All-time high score and simulation count cover every `simulation_runs` row.
+Games Played counts every `simulation_episodes` row; Moves Made sums their
+`steps`, with zero shown when no episodes exist. Both totals use comma formatting
+and update on the normal publication cycle. Existing installations must run the
+upgrade script to grant the reader SELECT access to `simulation_episodes`.
 The current score and snapshot come from the run referenced by the latest
 `golden_config_created` event, matching the report server. Cycles count completed
 ordered round-robin passes from Ax3l checkpoints and comparisons, ignoring

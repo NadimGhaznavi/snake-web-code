@@ -32,13 +32,15 @@ class PageParser(HTMLParser):
 
 class RenderingTests(unittest.TestCase):
     def setUp(self):
-        self.status = ExperimentStatus(49, 39, 190, 26, SNAPSHOT)
+        self.status = ExperimentStatus(49, 39, 190, 26, SNAPSHOT,
+                                       games_played=1234, moves_made=567890)
 
     def test_metrics_plain_reports_and_real_snapshot(self):
         page = render_status(self.status, 'wintermute')
         for text in ('Running on: wintermute', 'All-Time Highscore: 49',
                      'Current Highscore: 39', 'Simulations Run: 190',
                      'Completed Experiments: 26', 'Score Distribution',
+                     'Games Played: 1,234', 'Moves Made: 567,890',
                      'Experiment Highscores', 'Golden Configurations', 'Event Log'):
             self.assertIn(text, page)
         self.assertIn('reports/experiment-highscores.html', page)
@@ -62,11 +64,15 @@ class RenderingTests(unittest.TestCase):
         self.assertIn('&lt;script&gt;', page)
 
     def test_invalid_metrics_fail_and_zero_is_valid(self):
-        for field in ('all_time_highscore', 'current_highscore', 'simulations_submitted', 'experiment_cycles'):
+        for field in ('all_time_highscore', 'current_highscore', 'simulations_submitted',
+                      'experiment_cycles', 'games_played', 'moves_made'):
             for value in (-1, True, '51', 1.5):
                 with self.subTest(field=field, value=value), self.assertRaises(ValueError):
                     render_status(replace(self.status, **{field: value}), 'host')
         self.assertIn('Current Highscore: 0', render_status(replace(self.status, current_highscore=0), 'host'))
+        page = render_status(replace(self.status, games_played=0, moves_made=0), 'host')
+        self.assertIn('Games Played: 0', page)
+        self.assertIn('Moves Made: 0', page)
 
     def test_svg_geometry_and_json_input(self):
         svg = board_svg(json.dumps(SNAPSHOT))
@@ -97,6 +103,7 @@ class ExperimentQueryTests(unittest.TestCase):
         self.db.executescript('''
             ATTACH DATABASE ':memory:' AS ax3l;
             CREATE TABLE simulation_runs (run_id TEXT, high_score INTEGER, high_score_snapshot TEXT);
+            CREATE TABLE simulation_episodes (run_id TEXT, steps INTEGER);
             CREATE TABLE ax3l.events (event_id INTEGER PRIMARY KEY, occurred_at TEXT,
                 category TEXT, name TEXT, process_id TEXT);
             CREATE TABLE ax3l.event_messages (event_id INTEGER PRIMARY KEY, content TEXT);
@@ -125,6 +132,13 @@ class ExperimentQueryTests(unittest.TestCase):
         self.db.execute("INSERT INTO simulation_runs VALUES ('run', 0, NULL)")
         self.event('golden_config_created', 'missing-run')
         self.assertEqual(self.app.get_experiment_status(), ExperimentStatus(0, None, 1, 0))
+
+    def test_episode_totals_include_every_run_and_zero_step_games(self):
+        self.db.executemany('INSERT INTO simulation_episodes VALUES (?, ?)',
+                           [('old', 1200), ('old', 0), ('current', 3456)])
+        status = self.app.get_experiment_status()
+        self.assertEqual(status.games_played, 3)
+        self.assertEqual(status.moves_made, 4656)
 
     def test_cycles_count_completed_ordered_comparisons_only(self):
         # A gap, one full round, a duplicate, and an unfinished next round.
@@ -169,6 +183,7 @@ class CollationTests(unittest.TestCase):
         self.addCleanup(connection.close)
         # Temporary tables shadow the fixture tables only on this connection.
         with connection.cursor() as cursor:
+            cursor.execute('CREATE TEMPORARY TABLE simulation_episodes (steps INT)')
             cursor.execute("""CREATE TEMPORARY TABLE simulation_runs (
                 run_id CHAR(36), high_score INT, high_score_snapshot JSON
             ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci""")

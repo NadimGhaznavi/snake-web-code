@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.2] - 2026-09-23 @ 17:23
+
+### Added
+
+- Show Games Played and Moves Made below Simulations Run on the homepage, using totals across all stored simulation episodes and comma formatting. Grant the dedicated reader SELECT access to simulation episodes during installation or upgrade.
+
 ## [2.3.1] - 2026-09-20 @ 17:09
 
 ### Changed
