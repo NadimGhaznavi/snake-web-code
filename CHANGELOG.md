@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.4] - 2026-09-27 @ 16:48
+
 ### Added
 
 - Add a MyCount visit counter placeholder to the generated homepage footer, populated by the shared theme JavaScript.
