@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-10-03 @ 17:07
+
 ### Changed
 
 - Match Ax3l's Score Distribution changes: widen report boxes by 25%, reduce plot height by 40%, and show a separate bar for each integer score.
