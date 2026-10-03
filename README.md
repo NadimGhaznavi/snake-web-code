@@ -66,7 +66,7 @@ records; replacing/resetting that database requires deliberately starting a new
 export. Do not reuse an old CSV with reset event IDs.
 
 The Score Distribution Histogram compares all scored runs with the oldest two-thirds
-and oldest third of submitted runs, matching Ax3l's shared bins (at most 40, minimum width 1).
+and oldest third of submitted runs, matching Ax3l's shared bins with one bar per integer score.
 The cumulative cohort boundaries include unscored runs and round down; null scores
 are then excluded from bar counts. Zero remains a valid score.
 Plotly renders the precomputed bins as overlapping blue, orange, and muted-red bars, with
