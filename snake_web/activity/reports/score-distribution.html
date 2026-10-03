@@ -6,15 +6,15 @@
   <title>Score Distribution</title>
   <style>
     * { box-sizing: border-box; }
-    body { margin: 1rem auto; padding: 0 .75rem; max-width: 564px; background: #101720; color: #d5dfeb; font: 15px/1.6 "Courier New", Courier, monospace; }
-    .report-box { width: 100%; max-width: 540px; min-width: 0; margin: 0 auto 1rem; padding: .75rem; border: 1px solid #40566e; background: #101720; overflow-wrap: anywhere; }
+    body { margin: 1rem auto; padding: 0 .75rem; max-width: 699px; background: #101720; color: #d5dfeb; font: 15px/1.6 "Courier New", Courier, monospace; }
+    .report-box { width: 100%; max-width: 675px; min-width: 0; margin: 0 auto 1rem; padding: .75rem; border: 1px solid #40566e; background: #101720; overflow-wrap: anywhere; }
     h1 { margin: 0; font-size: 1.5em; line-height: 1.4; }
     p { margin: 0 0 .75rem; }
     p:last-child { margin-bottom: 0; }
     a { color: #80bdff; }
     nav.report-box { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
     nav a:last-child { text-align: right; }
-    #chart { width: 100%; height: 500px; background: #151f2b; }
+    #chart { width: 100%; height: 300px; background: #151f2b; }
     #chart:focus-visible { outline: 2px solid white; }
     #detail { min-height: 3em; margin: .75rem 0 0; }
     #message:empty { display: none; }
@@ -26,7 +26,7 @@
   <header class="report-box"><h1>Score Distribution</h1></header>
   <main>
     <section class="report-box" aria-label="About the score distribution">
-      <p>This chart shows how many times a score was achieved across simulation runs.</p>
+      <p>This chart shows how many times a score was achieved across simulation runs, with a separate bar for each integer score.</p>
       <ul>
         <li>All simulations: <span id="total-runs"></span></li>
         <li>Old simulations, 2/3 of the total: <span id="oldest-two-thirds-runs"></span></li>

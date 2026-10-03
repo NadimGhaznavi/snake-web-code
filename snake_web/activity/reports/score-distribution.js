@@ -30,7 +30,7 @@ function scoreDistribution(rows) {
   if (!all.length) return result;
   const low = all.reduce((value, row) => Math.min(value, row.score), Infinity);
   const high = all.reduce((value, row) => Math.max(value, row.score), 0);
-  const size = Math.max(1, Math.ceil((high - low + 1) / 40));
+  const size = 1;
   result.bins = Array.from({length: Math.floor((high - low) / size) + 1}, (_, index) => ({
     low: low + index * size, high: low + (index + 1) * size - 1, all: 0, older: 0, oldest: 0,
   }));
