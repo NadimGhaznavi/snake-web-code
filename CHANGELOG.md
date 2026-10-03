@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.1] - 2026-10-03 @ 17:12
+
 ### Changed
 
 - Widen the Experiment Highscores screen to match Score Distribution's 675px report boxes.
