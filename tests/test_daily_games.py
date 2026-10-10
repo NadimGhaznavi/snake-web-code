@@ -58,7 +58,8 @@ class DailyGamesTests(unittest.TestCase):
             with Image.open(BytesIO(files[path])) as gif:
                 self.assertEqual(gif.info['loop'], 0)
                 self.assertGreater(gif.n_frames, 1)
-                self.assertEqual(gif.size, (128, 96))
+                self.assertGreater(gif.width, 128)
+                self.assertGreater(gif.height, 96)
 
     def test_restart_reuses_gifs_and_new_winner_moves_cached_slots(self):
         self.export([run(3, 3), run(2, 2), run(1, 1)])

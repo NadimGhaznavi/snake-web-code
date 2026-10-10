@@ -53,6 +53,8 @@ code_files=(
     snake_web/activity/SimulationBoard.py
     snake_web/activity/DailyGames.py
     snake_web/activity/SimulationAnimation.py
+    snake_web/activity/fonts/DejaVuSansMono.ttf
+    snake_web/activity/fonts/LICENSE.txt
     snake_web/activity/reports/daily-games.js
     snake_web/interface/SnakeLab.py
     snake_web/constants/DSnakeLab.py
