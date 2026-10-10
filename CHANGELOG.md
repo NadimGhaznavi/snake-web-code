@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-10-10 @ 13:52
+
 The **Ulrike** release is dedicated to [Ulrike Tillmann](https://en.wikipedia.org/wiki/Ulrike_Tillmann).
 
 ### Added
