@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+The **Winifred** release is dedicated to [Winifred Edgerton Merrill](https://en.wikipedia.org/wiki/Winifred_Edgerton_Merrill).
+
+### Added
+
+- Add a sentence below the About page's project links identifying Snake Web as part of the osoyalce.com site, with a link to https://www.osoyalce.com.
+
 ## [3.1.0] - 2026-10-10 @ 14:32
 
 The **Vera** release is dedicated to [Vera Sós](https://en.wikipedia.org/wiki/Vera_T._S%C3%B3s).
