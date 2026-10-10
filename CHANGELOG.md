@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.1.0] - 2026-10-10 @ 14:32
+
 The **Vera** release is dedicated to [Vera Sós](https://en.wikipedia.org/wiki/Vera_T._S%C3%B3s).
 
 ### Changed
