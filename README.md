@@ -1,12 +1,14 @@
 # Snake Web code
 
 Python service that publishes Snake Lab scores, Ax3l experiment status, and a
-saved high-score board to the
+daily high-score game GIFs to the
 [Snake Web website](https://github.com/NadimGhaznavi/snake-web).
 Application code, deployment scripts, DevOps documentation, and tests live here; website pages and
 Jekyll configuration live in `snake-web`.
 
 ## Development
+
+Read the [Coding Guidelines](pages/coding-guidelines.md) before making changes.
 
 Run from the `snake-web-code` checkout:
 
@@ -27,6 +29,41 @@ and [upgrade guide](docs/devops/upgrade.md)
 for configuration and deployment details.
 
 See [DevOps documentation](docs/devops/index.md) for all operational guides and coding guidelines.
+
+## Daily games homepage
+
+The homepage follows Ax3l's dark bordered Status/Reports/game layout, headed
+**Live Ax3l Experiment Data**. **Top 3 Daily Games** shows captured games only,
+with **Simulation #ID - Highscore SCORE** captions and wrapping back/forward
+buttons. No qualifying games leave a blank viewer; one game disables both arrows.
+The panels stack on narrow screens. Existing report links and visit counter remain.
+
+Each publication pass searches simulations completed that day, ranked by score
+descending and numeric simulation ID ascending for ties. The source database's
+current date defines the day, matching its completion timestamps. Incomplete,
+unscored, and legacy SVG-only simulations are excluded; zero scores qualify.
+There is no backfill or special rollout data handling.
+
+`reports/data/daily-games.json` records the day, three leaders' numeric IDs,
+run UUIDs and scores, plus renderer version and duration. Captures are retrieved
+through Snake Lab's `simulation.highscore_frames` ZMQ method, following Ax3l's
+version-1 protocol and frame validation. Set `SNAKE_LAB_ENDPOINT` to override the
+default `tcp://127.0.0.1:41970`; the deployed publisher must reach the control service.
+No new database grant or source-schema change is required.
+
+GIF rendering matches Ax3l: 75 ms moves, animated food digestion, a one-second
+final pause, and continuous looping. Up to three GIF slots are published under
+`reports/games/daily-{1,2,3}.gif`. Unchanged leaders reuse their saved bytes, even
+after restarts or failed pushes; renderer changes regenerate captures. Image URLs
+include the run UUID, score and renderer version to refresh browser caches when
+slots change. Unused slots may remain on disk but are never displayed.
+
+JSON, GIFs, navigation script and homepage share the same publication commit.
+Atomic file replacement and the existing publisher lock protect writes; a failed
+push retries the committed state. A capture-service outage retains available
+cached leaders for the current day and retries discovery on the next pass.
+On a new day, the next publication replaces the rankings, including an empty
+list when no captured games qualify. The static site updates at publication time.
 
 ## Static report slice
 

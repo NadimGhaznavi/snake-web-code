@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-10-10 @ 13:52
+
+The **Ulrike** release is dedicated to [Ulrike Tillmann](https://en.wikipedia.org/wiki/Ulrike_Tillmann).
+
+### Added
+
+- Add project-specific agent guidance and canonical development standards for Snake Web, including read-only data access, safe publication, verification, and owner-managed production rollout.
+
+- Track the top three daily captured games in a JSON flat file and publish looping GIFs using Ax3l's Snake Lab retrieval protocol and animation renderer. Reuse cached leaders and retry failed publication commits without database changes.
+- Add wrapping daily-game navigation, with disabled arrows for fewer than two games and a blank viewer when no games qualify. Exclude legacy SVG-only results.
+
+### Changed
+
+- Redesign the homepage around Live Ax3l Experiment Data with Status and Reports panels beside Top 3 Daily Games, stacking the panels on smaller screens.
+- Install Pillow and pyzmq plus the new renderer, capture client and navigation assets with service upgrades.
+
 ## [2.4.1] - 2026-10-03 @ 17:12
 
 ### Changed

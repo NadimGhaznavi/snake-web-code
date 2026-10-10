@@ -37,14 +37,14 @@ class RenderingTests(unittest.TestCase):
 
     def test_metrics_plain_reports_and_real_snapshot(self):
         page = render_status(self.status, 'wintermute')
-        for text in ('Running on: wintermute', 'All-Time Highscore: 49',
-                     'Current Highscore: 39', 'Simulation Runs: 190',
+        for text in ('Hostname: wintermute', 'All-Time Highscore: 49',
+                     'Current Highscore: 39', 'Simulations Submitted: 190',
                      'Completed Experiments: 26', 'Score Distribution',
                      'Games Played: 1,234', 'Moves Made: 567,890',
                      'Experiment Highscores', 'Golden Configurations', 'Event Log'):
             self.assertIn(text, page)
         self.assertIn('reports/experiment-highscores.html', page)
-        self.assertIn('svg', PageParser(page).tags)
+        self.assertNotIn('svg', PageParser(page).tags)
         self.assertTrue(page.startswith('---\n'))
         self.assertIn('layout: single', page)
         self.assertEqual(page, render_status(self.status, 'wintermute'))
@@ -53,12 +53,12 @@ class RenderingTests(unittest.TestCase):
         page = render_status(replace(self.status, current_highscore=None, snapshot=None), 'host')
         self.assertIn('Current Highscore: —', page)
         self.assertIn('All-Time Highscore: 49', page)
-        self.assertIn('No saved board is available', page)
+        self.assertIn('<div class="daily-viewer"></div>', page)
         self.assertNotIn('svg', PageParser(page).tags)
 
     def test_hostnames_are_escaped_for_html_and_liquid(self):
         page = render_status(self.status, '<script>{{ variable }}{% include secret %}</script>')
-        self.assertNotIn('script', PageParser(page).tags)
+        self.assertEqual(PageParser(page).tags.count('script'), 1)  # Only our navigation script.
         self.assertNotIn('{{', page)
         self.assertNotIn('{%', page)
         self.assertIn('&lt;script&gt;', page)

@@ -51,6 +51,11 @@ code_files=(
     snake_web/activity/AppDb.py
     snake_web/activity/PublishStatus.py
     snake_web/activity/SimulationBoard.py
+    snake_web/activity/DailyGames.py
+    snake_web/activity/SimulationAnimation.py
+    snake_web/activity/reports/daily-games.js
+    snake_web/interface/SnakeLab.py
+    snake_web/constants/DSnakeLab.py
     snake_web/activity/TopRuns.py
     snake_web/activity/reports/top-100.html
     snake_web/activity/reports/top-100.js

@@ -3,7 +3,7 @@
 import fcntl
 import socket
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from dataclasses import replace
 import os
 from pathlib import Path
@@ -54,6 +54,8 @@ class PublishingTests(unittest.TestCase):
         self.appdb.get_public_simulations.return_value = []
         self.appdb.get_run_scores.return_value = []
         self.appdb.get_top_runs.return_value = []
+        self.appdb.get_daily_game_day.return_value = date(2026, 10, 10)
+        self.appdb.get_daily_runs.return_value = []
         self.activity = PublishStatus(self.appdb, self.publisher)
 
     def git(self, directory, *args):
@@ -76,7 +78,8 @@ class PublishingTests(unittest.TestCase):
             self.assertIn('unchanged', self.activity.run())
             self.assertFalse(any(call.args[0] == 'push' for call in git.call_args_list))
         self.assertEqual(head, self.git(self.remote, 'rev-parse', 'main'))
-        self.assertEqual(self.git(self.repo, 'diff-tree', '--no-commit-id', '--name-only', '-r', 'HEAD').splitlines(), sorted(self.publisher.OWNED_PATHS))
+        self.assertEqual(self.git(self.repo, 'diff-tree', '--no-commit-id', '--name-only', '-r', 'HEAD').splitlines(),
+                         sorted(set(self.publisher.OWNED_PATHS) - set(self.publisher.DAILY_GIF_PATHS)))
 
     def test_top_runs_refresh_and_retry_failed_push(self):
         self.appdb.get_top_runs.return_value = [dict(
@@ -106,6 +109,37 @@ class PublishingTests(unittest.TestCase):
         thinking = self.git(self.remote, 'show', 'main:' + self.publisher.THINKING_PATH)
         self.assertIn('Run #12 - Score: 40', thinking)
         self.assertNotIn('Run #9', thinking)
+
+    def test_daily_gifs_share_commit_retry_and_reuse(self):
+        from test_daily_games import run, frames
+        self.appdb.get_daily_runs.return_value = [run(3, 3), run(2, 2), run(1, 1)]
+        with patch('snake_web.activity.DailyGames.SnakeLab') as snake:
+            snake.return_value.get_highscore_frames.side_effect = lambda uuid: frames(int(uuid[-1]))
+            hook = self.remote / 'hooks/pre-receive'
+            hook.write_text('#!/bin/sh\nexit 1\n')
+            hook.chmod(0o755)
+            with self.assertRaisesRegex(RuntimeError, 'Git push failed'):
+                self.activity.run()
+            head = self.git(self.repo, 'rev-parse', 'HEAD')
+            hook.unlink()
+            snake.return_value.get_highscore_frames.reset_mock()
+            self.activity.run()
+            snake.return_value.get_highscore_frames.assert_not_called()
+            self.assertEqual(head, self.git(self.remote, 'rev-parse', 'main'))
+            self.assertIn('Simulation #3 - Highscore 3', self.remote_page())
+            self.assertIn('Simulation #1 - Highscore 1', self.remote_page())
+            for path in self.publisher.DAILY_GIF_PATHS:
+                self.assertTrue((self.repo / path).read_bytes().startswith(b'GIF89a'))
+            self.assertIn('unchanged', self.activity.run())
+            self.appdb.get_daily_runs.return_value = [run(4, 4), run(3, 3), run(2, 2)]
+            self.activity.run()
+            snake.return_value.get_highscore_frames.assert_called_once_with(run(4, 4)['run_id'])
+            self.assertIn('Simulation #4 - Highscore 4', self.remote_page())
+            self.assertNotIn('Simulation #1', self.remote_page())
+            self.appdb.get_daily_game_day.return_value = date(2026, 10, 11)
+            self.appdb.get_daily_runs.return_value = []
+            self.activity.run()
+            self.assertIn('<div class="daily-viewer"></div>', self.remote_page())
 
     def test_history_appends_and_preserves_lower_seed_baselines(self):
         self.appdb.get_highscore_history.return_value = [
@@ -225,7 +259,7 @@ class PublishingTests(unittest.TestCase):
                                                                experiment_cycles=27)
         self.assertIn('published', self.activity.run())
         self.assertNotEqual(head, self.git(self.remote, 'rev-parse', 'main'))
-        self.assertIn('Simulation Runs: 191', self.remote_page())
+        self.assertIn('Simulations Submitted: 191', self.remote_page())
         self.assertIn('Completed Experiments: 27', self.remote_page())
 
     def test_episode_metrics_publish_independently(self):
@@ -270,12 +304,11 @@ class PublishingTests(unittest.TestCase):
         self.activity.run()
         self.assertIn('Current Highscore: 0', self.remote_page())
 
-    def test_no_score_preserves_page_without_git(self):
+    def test_no_score_publishes_empty_viewer(self):
         self.appdb.get_experiment_status.return_value = replace(STATUS, all_time_highscore=None)
-        with patch.object(self.publisher, 'session') as session:
-            self.assertIn('No recorded score', self.activity.run())
-            session.assert_not_called()
-        self.assertEqual(self.page.read_text(), PAGE)
+        self.assertIn('published', self.activity.run())
+        self.assertIn('All-Time Highscore: —', self.remote_page())
+        self.assertIn('<div class="daily-viewer"></div>', self.remote_page())
 
     def test_database_failure_preserves_page(self):
         self.appdb.get_experiment_status.side_effect = RuntimeError('DB unavailable')

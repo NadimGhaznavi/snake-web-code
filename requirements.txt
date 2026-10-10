@@ -1,1 +1,3 @@
 PyMySQL==1.2.0
+pyzmq>=26,<28
+Pillow>=11,<13
