@@ -30,12 +30,16 @@ class GitPublisher:
     EVENT_HISTORY_PATH = "reports/data/events.csv"
     EVENT_SIMULATIONS_PATH = "reports/data/event-simulations.csv"
     EVENT_CURSOR_PATH = "reports/data/event-export.json"
+    DAILY_PATH = "reports/data/daily-games.json"
+    DAILY_SCRIPT_PATH = "reports/daily-games.js"
+    DAILY_GIF_PATHS = tuple(f"reports/games/daily-{rank}.gif" for rank in range(1, 4))
     OWNED_PATHS = (STATUS_PATH, REPORT_PATH, HISTORY_PATH, SCRIPT_PATH,
                    DISTRIBUTION_PATH, DISTRIBUTION_SCRIPT_PATH, SCORES_PATH,
                    TOP_RUNS_PATH, TOP_RUNS_SCRIPT_PATH, THINKING_PATH,
                    GOLDEN_PATH, GOLDEN_SCRIPT_PATH, GOLDEN_HISTORY_PATH, GOLDEN_DETAIL_PATH,
                    EVENT_PATH, EVENT_DETAIL_PATH, EVENT_SCRIPT_PATH, CSV_SCRIPT_PATH,
-                   EVENT_HISTORY_PATH, EVENT_SIMULATIONS_PATH, EVENT_CURSOR_PATH)
+                   EVENT_HISTORY_PATH, EVENT_SIMULATIONS_PATH, EVENT_CURSOR_PATH,
+                   DAILY_PATH, DAILY_SCRIPT_PATH, *DAILY_GIF_PATHS)
 
     def __init__(self, checkout, branch="main"):
         self.checkout = Path(checkout).resolve()
@@ -98,6 +102,10 @@ class GitPublisher:
         path = self._managed_file(name or self.HISTORY_PATH)
         return path.read_text() if path.exists() else ''
 
+    def read_bytes(self, name):
+        path = self._managed_file(name)
+        return path.read_bytes() if path.exists() else b''
+
     def _managed_file(self, name):
         if name not in self.OWNED_PATHS:
             raise ValueError('Not a managed publishing path')
@@ -113,7 +121,8 @@ class GitPublisher:
         changed = []
         for name, value in files.items():
             path = paths[name]
-            if path.exists() and path.read_bytes() == value.encode('utf-8'):
+            data = value if isinstance(value, bytes) else value.encode('utf-8')
+            if path.exists() and path.read_bytes() == data:
                 continue
             self._write_file(path, value)
             changed.append(name)
@@ -127,12 +136,13 @@ class GitPublisher:
 
     def _write_file(self, path, content):
         path.parent.mkdir(parents=True, exist_ok=True)
-        if not path.exists() or path.read_bytes() != content.encode("utf-8"):
+        data = content if isinstance(content, bytes) else content.encode('utf-8')
+        if not path.exists() or path.read_bytes() != data:
             temporary = None
             try:
                 with tempfile.NamedTemporaryFile(dir=path.parent, delete=False) as stream:
                     temporary = Path(stream.name)
-                    stream.write(content.encode("utf-8"))
+                    stream.write(data)
                 temporary.chmod(path.stat().st_mode & 0o777 if path.exists() else 0o644)
                 temporary.replace(path)
             finally:

@@ -8,10 +8,10 @@ import socket
 from string import Template
 
 from snake_web.activity.EventLogExport import export_event_log
+from snake_web.activity.DailyGames import export_daily_games, render_daily_games
 from snake_web.activity.GoldenHistory import append_golden_history, read_golden_history
 from snake_web.activity.HighscoreHistory import append_history, read_history
 from snake_web.activity.RunScoreHistory import append_scores
-from snake_web.activity.SimulationBoard import board_svg
 from snake_web.activity.TopRuns import render_top_runs
 from snake_web.entity.ExperimentStatus import ExperimentStatus
 
@@ -19,7 +19,7 @@ from snake_web.entity.ExperimentStatus import ExperimentStatus
 _TEMPLATE = Template(Path(__file__).with_name('homepage.html').read_text())
 
 
-def render_status(status: ExperimentStatus, hostname: str, last_updated: str = '') -> str:
+def render_status(status: ExperimentStatus, hostname: str, last_updated: str = '', games=()) -> str:
     def number(value, *, optional=False, commas=False):
         if optional and value is None:
             return '—'
@@ -27,19 +27,19 @@ def render_status(status: ExperimentStatus, hostname: str, last_updated: str = '
             raise ValueError('Experiment metrics must be nonnegative integers')
         return format(value, ',') if commas else str(value)
 
-    board = board_svg(status.snapshot)
     return _TEMPLATE.substitute(
         # Encode Liquid delimiters too: the file is processed by Jekyll after
         # publication, and hostnames are data, never template instructions.
         hostname=escape(hostname).replace('{', '&#123;').replace('}', '&#125;'),
         all_time_highscore=number(status.all_time_highscore, optional=True),
         current_highscore=number(status.current_highscore, optional=True),
-        simulations=number(status.simulations_submitted),
+        simulations=number(status.simulations_submitted, commas=True),
         cycles=number(status.experiment_cycles),
         games_played=number(status.games_played, commas=True),
         moves_made=number(status.moves_made, commas=True),
         last_updated=escape(last_updated),
-        board=board or '<p>No saved board is available for the current configuration.</p>',
+        daily_games=render_daily_games(games),
+        game_position=f'1 / {len(games)}' if games else '',
     )
 
 
@@ -50,9 +50,8 @@ class PublishStatus:
 
     def run(self) -> str:
         status = self._appdb.get_experiment_status()
-        if status.all_time_highscore is None:
-            return 'No recorded score; homepage preserved'
         with self._publisher.session():
+            games, daily_files = export_daily_games(self._appdb, self._publisher)
             existing = self._publisher.read_history()
             history = read_history(existing)
             records = self._appdb.get_highscore_history(history[-1]['event_id'] if history else 0)
@@ -68,6 +67,8 @@ class PublishStatus:
                 '__TOTAL__', str(status.simulations_submitted))
             top_runs = self._appdb.get_top_runs()
             reports = {
+                **daily_files,
+                self._publisher.DAILY_SCRIPT_PATH: (assets / 'daily-games.js').read_text(),
                 self._publisher.TOP_RUNS_PATH: render_top_runs(top_runs),
                 self._publisher.THINKING_PATH: render_top_runs(top_runs, thinking=True),
                 self._publisher.TOP_RUNS_SCRIPT_PATH: (assets / 'top-100.js').read_text(),
@@ -90,10 +91,12 @@ class PublishStatus:
             previous_page = self._publisher.read_status()
             match = re.search(r'<!-- last-updated -->([^<]*)<!-- /last-updated -->', previous_page)
             previous_time = match.group(1) if match else ''
-            page = render_status(status, socket.gethostname(), previous_time)
+            page = render_status(status, socket.gethostname(), previous_time, games)
             if page != previous_page or any(
-                    self._publisher.read_history(name) != content for name, content in reports.items()):
+                    self._publisher.read_bytes(name) != (content if isinstance(content, bytes)
+                                                        else content.encode('utf-8'))
+                    for name, content in reports.items()):
                 page = render_status(status, socket.gethostname(),
-                                     datetime.now().astimezone().strftime('%Y-%m-%d %H:%M:%S %Z (%z)'))
+                                     datetime.now().astimezone().strftime('%Y-%m-%d %H:%M:%S %Z (%z)'), games)
             changed = self._publisher.publish(page, reports)
         return f"Experiment homepage: {'published' if changed else 'unchanged'}"

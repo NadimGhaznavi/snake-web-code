@@ -102,7 +102,8 @@ generating the homepage and reports. It stages only `index.md`,
 `reports/data/golden-configurations.csv`, `reports/event-log.html`,
 `reports/event-detail.html`, `reports/event-log.js`, `reports/report-csv.js`,
 `reports/data/events.csv`, `reports/data/event-simulations.csv`, and
-`reports/data/event-export.json`, committing
+`reports/data/event-export.json`, `reports/data/daily-games.json`,
+`reports/daily-games.js`, and the three `reports/games/daily-{1,2,3}.gif` slots, committing
 all changed files together. It never
 force-pushes.
 
