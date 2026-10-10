@@ -65,7 +65,7 @@ def export_daily_games(appdb, publisher, snake=None):
             if frames is not None:
                 if frames[-1]['board']['score'] != game['high_score']:
                     raise ValueError('Captured game score differs from simulation result')
-                animation = SimulationAnimation.render(frames, DURATION_MS)
+                animation = SimulationAnimation.render(frames, DURATION_MS, simulation_id=game['id'])
         if animation is None:
             continue  # Legacy SVG-only games never qualify.
         files[publisher.DAILY_GIF_PATHS[len(games)]] = animation
@@ -85,9 +85,9 @@ def render_daily_games(games):
         url = (f'reports/games/daily-{rank}.gif?run={game["run_id"]}'
                f'&amp;renderer={SimulationAnimation.VERSION}&amp;score={game["high_score"]}')
         figures.append(
-            f'<figure class="daily-game"{ " hidden" if rank > 1 else ""}>'
+            f'<figure class="daily-game" aria-label="Simulation #{game["id"]} - Highscore {game["high_score"]}"'
+            f'{" hidden" if rank > 1 else ""}>'
             f'<img class="simulation-board" src="{url}" '
             f'alt="Animated game from simulation {game["id"]}">'
-            f'<figcaption>Simulation #{game["id"]} - Highscore {game["high_score"]}</figcaption>'
             '</figure>')
     return '\n'.join(figures)

@@ -34,8 +34,8 @@ See [DevOps documentation](docs/devops/index.md) for all operational guides and 
 
 The homepage follows Ax3l's dark bordered Status/Reports/game layout, headed
 **Live Ax3l Experiment Data**. **Top 3 Daily Games** shows captured games only,
-with **Simulation #ID - Highscore SCORE** captions and wrapping back/forward
-buttons. No qualifying games leave a blank viewer; one game disables both arrows.
+with wrapping back/forward buttons and the simulation ID and high score
+embedded above the game in each GIF. No qualifying games leave a blank viewer; one game disables both arrows.
 The panels stack on narrow screens. Existing report links and visit counter remain.
 
 Each publication pass searches simulations completed that day, ranked by score
@@ -52,7 +52,11 @@ default `tcp://127.0.0.1:41970`; the deployed publisher must reach the control s
 No new database grant or source-schema change is required.
 
 GIF rendering matches Ax3l: 75 ms moves, animated food digestion, a one-second
-final pause, and continuous looping. Up to three GIF slots are published under
+final pause, and continuous looping. Each GIF includes a border in the website
+colors, a two-line simulation/high-score heading, and a right-aligned current
+score below the board. The monospace score field reserves at least two character
+positions so its label stays still as the score grows. The bundled DejaVu Sans
+Mono font keeps rendering consistent across hosts. Up to three GIF slots are published under
 `reports/games/daily-{1,2,3}.gif`. Unchanged leaders reuse their saved bytes, even
 after restarts or failed pushes; renderer changes regenerate captures. Image URLs
 include the run UUID, score and renderer version to refresh browser caches when
