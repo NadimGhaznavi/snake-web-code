@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.1.0] - 2026-10-10 @ 14:32
+
+The **Vera** release is dedicated to [Vera Sós](https://en.wikipedia.org/wiki/Vera_T._S%C3%B3s).
+
+### Changed
+
+- Add the website-style border, simulation ID, high score, and a right-aligned live score inside each daily-game GIF. Reserve at least two score characters for stable alignment and regenerate cached animations.
+
 ## [3.0.0] - 2026-10-10 @ 13:52
 
 The **Ulrike** release is dedicated to [Ulrike Tillmann](https://en.wikipedia.org/wiki/Ulrike_Tillmann).
