@@ -1,6 +1,7 @@
 """Application queries for Snake Lab and Ax3l experiment data."""
 
 import json
+from datetime import timedelta
 
 from snake_web.constants.PublicEvents import EVENT_LABELS, CONFIGURATION_FIELDS
 from snake_web.entity.ExperimentStatus import ExperimentStatus
@@ -115,6 +116,19 @@ class AppDb:
         return self._db.query(
             "SELECT id, high_score FROM simulation_runs ORDER BY id"
         )
+
+    def get_daily_game_day(self):
+        """Use the source database's clock, which also timestamps completions."""
+        return self._db.query('SELECT CURRENT_DATE AS day')[0]['day']
+
+    def get_daily_runs(self, day) -> list[dict]:
+        """Rank completed results for one source day; captures are checked over ZMQ."""
+        return self._db.query('''
+            SELECT id, run_id, high_score FROM simulation_runs
+            WHERE status = 'completed' AND high_score IS NOT NULL
+              AND completed_at >= %s AND completed_at < %s
+            ORDER BY high_score DESC, id ASC
+        ''', (day, day + timedelta(days=1)))
 
     def get_top_runs(self) -> list[dict]:
         """Rank scored simulations, using submission ID to break score ties."""
