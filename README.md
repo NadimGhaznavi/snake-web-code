@@ -33,7 +33,7 @@ See [DevOps documentation](docs/devops/index.md) for all operational guides and 
 ## Daily games homepage
 
 The homepage follows Ax3l's dark bordered Status/Reports/game layout, headed
-**Live Ax3l Experiment Data**. **Top 3 Daily Games** shows captured games only,
+**Live Ax3l Experiment Data**. **Top 10 Daily Games** shows captured games only,
 with wrapping back/forward buttons and the simulation ID and high score
 embedded above the game in each GIF. No qualifying games leave a blank viewer; one game disables both arrows.
 The panels stack on narrow screens. Existing report links and visit counter remain.
@@ -44,7 +44,7 @@ current date defines the day, matching its completion timestamps. Incomplete,
 unscored, and legacy SVG-only simulations are excluded; zero scores qualify.
 There is no backfill or special rollout data handling.
 
-`reports/data/daily-games.json` records the day, three leaders' numeric IDs,
+`reports/data/daily-games.json` records the day, up to ten leaders' numeric IDs,
 run UUIDs and scores, plus renderer version and duration. Captures are retrieved
 through Snake Lab's `simulation.highscore_frames` ZMQ method, following Ax3l's
 version-1 protocol and frame validation. Set `SNAKE_LAB_ENDPOINT` to override the
@@ -56,8 +56,8 @@ final pause, and continuous looping. Each GIF includes a border in the website
 colors, a two-line simulation/high-score heading, and a right-aligned current
 score below the board. The monospace score field reserves at least two character
 positions so its label stays still as the score grows. The bundled DejaVu Sans
-Mono font keeps rendering consistent across hosts. Up to three GIF slots are published under
-`reports/games/daily-{1,2,3}.gif`. Unchanged leaders reuse their saved bytes, even
+Mono font keeps rendering consistent across hosts. Up to ten GIF slots are published under
+`reports/games/daily-1.gif` through `reports/games/daily-10.gif`. Unchanged leaders reuse their saved bytes, even
 after restarts or failed pushes; renderer changes regenerate captures. Image URLs
 include the run UUID, score and renderer version to refresh browser caches when
 slots change. Unused slots may remain on disk but are never displayed.

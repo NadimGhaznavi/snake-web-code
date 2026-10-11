@@ -1,5 +1,5 @@
 function assert(value) { if (!value) throw new Error('Assertion failed'); }
-for (const count of [0, 1, 2, 3]) {
+for (const count of [0, 1, 2, 3, 10]) {
   const games = Array.from({length: count}, (_, i) => ({hidden: i !== 0}));
   const position = {textContent: count ? `1 / ${count}` : ''};
   const buttons = [-1, 1].map(step => ({
