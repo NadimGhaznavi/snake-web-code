@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.2.4] - 2026-10-11 @ 08:39
+
 The **Xenocyon** release celebrates the Xenocyon who were last seen about 500,000 years ago, but not by us.
 
 ### Changed
