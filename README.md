@@ -36,7 +36,9 @@ The homepage follows Ax3l's dark bordered Status/Reports/game layout, headed
 **Live Ax3l Experiment Data**. **Top 10 Daily Games** shows captured games only,
 with wrapping back/forward buttons and the simulation ID and high score
 embedded above the game in each GIF. No qualifying games leave a blank viewer; one game disables both arrows.
-The panels stack on narrow screens. Existing report links and visit counter remain.
+The panels stack on narrow screens. Daily Configuration Progress sits below the
+daily games on desktop and after the other panels on mobile. Last Updated and
+Visits share a bordered footer at the bottom.
 
 Each publication pass searches simulations completed that day, ranked by score
 descending and numeric simulation ID ascending for ties. The source database's
@@ -68,6 +70,26 @@ push retries the committed state. A capture-service outage retains available
 cached leaders for the current day and retries discovery on the next pass.
 On a new day, the next publication replaces the rankings, including an empty
 list when no captured games qualify. The static site updates at publication time.
+
+## Daily configuration progress
+
+Each half-hour publication saves the ten highest-scoring completed configurations
+for that source-database day, including results without game captures. Ties favor
+the lower simulation ID; null scores and incomplete runs are excluded, while zero
+qualifies. The GIF uses ten slots ordered from lowest score on the left to highest
+on the right, with simulation IDs and scores above a common zero-based axis.
+
+`reports/data/daily-progress.json` saves observations and
+`reports/games/daily-progress.gif` animates them. Frames pause for two seconds,
+with five seconds on the last frame. A complete day has 48 frames and a 99-second
+loop. Midnight closes the preceding day's final interval; the first observation
+after midnight starts a fresh day. The source database's clock defines both days
+and slots. Repeated passes in one slot reuse its saved observation and GIF.
+
+Collection starts with the current ranking; earlier frames are never backfilled.
+Partial days and missed publications show only actual observations, with their
+timestamps. The JSON, GIF and homepage share a commit and survive restarts and
+failed pushes. Renderer upgrades regenerate from saved observations.
 
 ## Static report slice
 

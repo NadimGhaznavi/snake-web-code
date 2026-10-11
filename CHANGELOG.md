@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+This release remembers the **Thylacine** who became extinct in 1936.
+
+### Added
+
+- Animate the top ten daily configuration scores from observed half-hour updates,
+  with two-second frames and a five-second final pause, without backfilling history.
+
+### Changed
+
+- Place daily progress below the daily games on desktop and last on mobile,
+  followed by a bordered Last Updated and Visits footer.
+
 ## [3.2.2] - 2026-10-11 @ 05:22
 
 This release is named for the **Megalodon**, who became extinct about 3.6 million years go.

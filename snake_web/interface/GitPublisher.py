@@ -34,6 +34,8 @@ class GitPublisher:
     EVENT_CURSOR_PATH = "reports/data/event-export.json"
     DAILY_PATH = "reports/data/daily-games.json"
     DAILY_SCRIPT_PATH = "reports/daily-games.js"
+    PROGRESS_PATH = "reports/data/daily-progress.json"
+    PROGRESS_GIF_PATH = "reports/games/daily-progress.gif"
     DAILY_GIF_PATHS = tuple(f"reports/games/daily-{rank}.gif"
                            for rank in range(1, DSnakeWeb.DAILY_GAME_LIMIT + 1))
     OWNED_PATHS = (STATUS_PATH, REPORT_PATH, HISTORY_PATH, SCRIPT_PATH,
@@ -42,7 +44,8 @@ class GitPublisher:
                    GOLDEN_PATH, GOLDEN_SCRIPT_PATH, GOLDEN_HISTORY_PATH, GOLDEN_DETAIL_PATH,
                    EVENT_PATH, EVENT_DETAIL_PATH, EVENT_SCRIPT_PATH, CSV_SCRIPT_PATH,
                    EVENT_HISTORY_PATH, EVENT_SIMULATIONS_PATH, EVENT_CURSOR_PATH,
-                   DAILY_PATH, DAILY_SCRIPT_PATH, *DAILY_GIF_PATHS)
+                   DAILY_PATH, DAILY_SCRIPT_PATH, *DAILY_GIF_PATHS,
+                   PROGRESS_PATH, PROGRESS_GIF_PATH)
 
     def __init__(self, checkout, branch="main"):
         self.checkout = Path(checkout).resolve()
