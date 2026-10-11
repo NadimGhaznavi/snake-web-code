@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.2.0] - 2026-10-11 @ 08:15
+
 Named for the **Vintana** who died out about 66 million years ago.
 
 ### Added
