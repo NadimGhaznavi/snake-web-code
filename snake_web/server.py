@@ -13,12 +13,12 @@ from snake_web.interface.DbMgr import DbMgr
 from snake_web.interface.GitPublisher import GitPublisher
 
 
-def publish_once() -> str:
+def publish_once(*, collect_progress=True) -> str:
     with DbMgr() as db:
         return PublishStatus(
             AppDb(db),
             GitPublisher(os.environ["PUBLISH_CHECKOUT"], os.environ.get("PUBLISH_BRANCH", "main")),
-        ).run()
+        ).run(collect_progress=collect_progress)
 
 
 def seconds_until_next_publish(now: datetime) -> float:
@@ -42,7 +42,7 @@ def main() -> int:
         if not args.once and stopped.wait(seconds_until_next_publish(datetime.now())):
             break
         try:
-            logging.info(publish_once())
+            logging.info(publish_once(collect_progress=False) if args.once else publish_once())
         except Exception as exc:
             logging.error("Status publishing failed: %s", exc)
             if args.once:
