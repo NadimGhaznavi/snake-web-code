@@ -112,9 +112,9 @@ class PublishingTests(unittest.TestCase):
 
     def test_daily_gifs_share_commit_retry_and_reuse(self):
         from test_daily_games import run, frames
-        self.appdb.get_daily_runs.return_value = [run(3, 3), run(2, 2), run(1, 1)]
+        self.appdb.get_daily_runs.return_value = [run(number, number) for number in range(10, 0, -1)]
         with patch('snake_web.activity.DailyGames.SnakeLab') as snake:
-            snake.return_value.get_highscore_frames.side_effect = lambda uuid: frames(int(uuid[-1]))
+            snake.return_value.get_highscore_frames.side_effect = lambda uuid: frames(int(uuid.replace('-', ''), 16))
             hook = self.remote / 'hooks/pre-receive'
             hook.write_text('#!/bin/sh\nexit 1\n')
             hook.chmod(0o755)
@@ -128,14 +128,16 @@ class PublishingTests(unittest.TestCase):
             self.assertEqual(head, self.git(self.remote, 'rev-parse', 'main'))
             self.assertIn('Simulation #3 - Highscore 3', self.remote_page())
             self.assertIn('Simulation #1 - Highscore 1', self.remote_page())
+            self.assertIn('Top 10 Daily Games', self.remote_page())
+            self.assertIn('1 / 10', self.remote_page())
             for path in self.publisher.DAILY_GIF_PATHS:
                 self.assertTrue((self.repo / path).read_bytes().startswith(b'GIF89a'))
             self.assertIn('unchanged', self.activity.run())
-            self.appdb.get_daily_runs.return_value = [run(4, 4), run(3, 3), run(2, 2)]
+            self.appdb.get_daily_runs.return_value = [run(number, number) for number in range(11, 1, -1)]
             self.activity.run()
-            snake.return_value.get_highscore_frames.assert_called_once_with(run(4, 4)['run_id'])
-            self.assertIn('Simulation #4 - Highscore 4', self.remote_page())
-            self.assertNotIn('Simulation #1', self.remote_page())
+            snake.return_value.get_highscore_frames.assert_called_once_with(run(11, 11)['run_id'])
+            self.assertIn('Simulation #11 - Highscore 11', self.remote_page())
+            self.assertNotIn('Simulation #1 -', self.remote_page())
             self.appdb.get_daily_game_day.return_value = date(2026, 10, 11)
             self.appdb.get_daily_runs.return_value = []
             self.activity.run()
