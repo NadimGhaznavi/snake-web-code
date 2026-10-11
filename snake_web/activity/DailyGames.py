@@ -86,7 +86,8 @@ def render_daily_games(games):
         url = (f'reports/games/daily-{rank}.gif?run={game["run_id"]}'
                f'&amp;renderer={SimulationAnimation.VERSION}&amp;score={game["high_score"]}')
         figures.append(
-            f'<figure class="daily-game" aria-label="Simulation #{game["id"]} - Highscore {game["high_score"]}"'
+            f'<figure class="daily-game" data-game-id="{game["id"]}" '
+            f'aria-label="Simulation #{game["id"]} - Highscore {game["high_score"]}"'
             f'{" hidden" if rank > 1 else ""}>'
             f'<img class="simulation-board" src="{url}" '
             f'alt="Animated game from simulation {game["id"]}">'

@@ -92,6 +92,14 @@ collection timestamps appear inside each GIF frame as `DD Mon YYYY - HH:MM`
 and remain in the JSON. The JSON, GIF and homepage share a commit and survive restarts and
 failed pushes. Renderer upgrades regenerate from saved observations.
 
+With JavaScript, the chart plays the same rendered frames from
+`reports/games/daily-progress.png`. Its bars select matching games in Top 10 Daily
+Games; the arrows update that same selection. The selected game's bar uses the
+food's orange color. Navigation holds the latest observed frame containing the
+selected game; reloading restarts the animation. Bars outside the current game
+viewer are not selectable. The original GIF remains the fallback when JavaScript
+or the frame sheet is unavailable. The frame sheet shares the publication commit.
+
 ## Static report slice
 
 Top 100 displays the saved boards for up to 100 scored simulations, ordered by
