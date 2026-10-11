@@ -99,20 +99,24 @@ def render_progress(state):
     return output.getvalue()
 
 
-def export_daily_progress(appdb, publisher):
-    now = appdb.get_daily_progress_time()
-    day, slot = observation_slot(now)
+def export_daily_progress(appdb, publisher, *, collect=True):
     state = read_progress(publisher.read_history(publisher.PROGRESS_PATH))
-    if state and day < date.fromisoformat(state['day']):
-        raise ValueError('Daily progress source clock moved backwards')
-    if not state or state['day'] != day.isoformat():
-        state = dict(version=1, renderer=RENDERER_VERSION, day=day.isoformat(), frames=[])
-    if state['frames'] and slot < state['frames'][-1]['slot']:
-        raise ValueError('Daily progress source clock moved backwards')
-    changed = not state['frames'] or slot != state['frames'][-1]['slot']
-    if changed:
-        rows = [configuration_record(row) for row in appdb.get_daily_configurations(day, now)]
-        state['frames'].append(dict(slot=slot, observed_at=now.isoformat(), configurations=rows))
+    if not collect and state is None:
+        return '', {}
+    changed = False
+    if collect:
+        now = appdb.get_daily_progress_time()
+        day, slot = observation_slot(now)
+        if state and day < date.fromisoformat(state['day']):
+            raise ValueError('Daily progress source clock moved backwards')
+        if not state or state['day'] != day.isoformat():
+            state = dict(version=1, renderer=RENDERER_VERSION, day=day.isoformat(), frames=[])
+        if state['frames'] and slot < state['frames'][-1]['slot']:
+            raise ValueError('Daily progress source clock moved backwards')
+        changed = not state['frames'] or slot != state['frames'][-1]['slot']
+        if changed:
+            rows = [configuration_record(row) for row in appdb.get_daily_configurations(day, now)]
+            state['frames'].append(dict(slot=slot, observed_at=now.isoformat(), configurations=rows))
     regenerate = changed or state['renderer'] != RENDERER_VERSION
     state['renderer'] = RENDERER_VERSION
     content = json.dumps(state, indent=2) + '\n'

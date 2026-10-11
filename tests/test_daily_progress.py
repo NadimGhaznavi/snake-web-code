@@ -49,6 +49,18 @@ class DailyProgressTests(unittest.TestCase):
         self.assertEqual([frame['slot'] for frame in state['frames']], [24, 27])
         self.assertEqual(state['frames'][0]['configurations'], [dict(id=2, high_score=40)])
 
+    def test_manual_publication_renders_saved_observations_without_collection(self):
+        self.assertEqual(export_daily_progress(self.app, self.publisher, collect=False), ('', {}))
+        html, state = self.export('2026-10-11T12:30:00', [dict(id=1, high_score=40)])
+        self.app.reset_mock()
+        del self.files[GitPublisher.PROGRESS_GIF_PATH]
+        repeated, files = export_daily_progress(self.app, self.publisher, collect=False)
+        self.assertEqual(repeated, html)
+        self.assertEqual(read_progress(files[GitPublisher.PROGRESS_PATH]), state)
+        self.assertTrue(files[GitPublisher.PROGRESS_GIF_PATH].startswith(b'GIF89a'))
+        self.app.get_daily_progress_time.assert_not_called()
+        self.app.get_daily_configurations.assert_not_called()
+
     def test_complete_day_has_48_frames_and_99_second_loop(self):
         start = datetime(2026, 10, 11)
         # Exercise all slots without rendering every intermediate GIF again.

@@ -86,6 +86,10 @@ with five seconds on the last frame. A complete day has 48 frames and a 99-secon
 loop. Midnight closes the preceding day's final interval; the first observation
 after midnight starts a fresh day. The source database's clock defines both days
 and slots. Repeated passes in one slot reuse its saved observation and GIF.
+Manual `--once` / `push-now` publications refresh the site without collecting
+chart observations. They reuse the saved animation, including across day rollover;
+before the first scheduled collection, the chart is blank. Saved frames can still
+be rendered again when a renderer upgrade or missing GIF requires it.
 
 Collection starts with the current ranking; earlier frames are never backfilled.
 Partial days and missed publications show only actual observations; their

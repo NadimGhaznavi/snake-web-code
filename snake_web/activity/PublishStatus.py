@@ -50,11 +50,12 @@ class PublishStatus:
         self._appdb = appdb
         self._publisher = publisher
 
-    def run(self) -> str:
+    def run(self, *, collect_progress=True) -> str:
         status = self._appdb.get_experiment_status()
         with self._publisher.session():
             games, daily_files = export_daily_games(self._appdb, self._publisher)
-            progress, progress_files = export_daily_progress(self._appdb, self._publisher)
+            progress, progress_files = export_daily_progress(
+                self._appdb, self._publisher, collect=collect_progress)
             existing = self._publisher.read_history()
             history = read_history(existing)
             records = self._appdb.get_highscore_history(history[-1]['event_id'] if history else 0)
