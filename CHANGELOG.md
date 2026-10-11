@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.2.0] - 2026-10-11 @ 02:19
+
 This release remembers the **Irish Elk** who roamed the earth some 7,700 years ago. This animal's antlers spanned almost 14 feet!
 
 ### Changed
