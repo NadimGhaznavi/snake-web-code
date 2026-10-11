@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.2.2] - 2026-10-11 @ 05:22
+
 This release is named for the **Megalodon**, who became extinct about 3.6 million years go.
 
 ### Fixed
