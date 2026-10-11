@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Remove the heading above the daily configuration progress chart.
+- Remove the chart's date/time line and its reserved space.
 
 ## [4.0.0] - 2026-10-11 @ 07:16
 

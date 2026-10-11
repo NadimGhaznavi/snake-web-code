@@ -93,7 +93,7 @@ class DailyProgressTests(unittest.TestCase):
                 image = gif.convert('RGB')
                 for index, score in enumerate(scores):
                     x = 111 + index * 70
-                    y = 370 - 270 * score / 50
+                    y = 328 - 270 * score / 50
                     self.assertEqual(image.getpixel((x, int(y) + 2)), (121, 184, 243))
                     self.assertEqual(image.getpixel((x, int(y) - 2)), (16, 23, 32))
 
