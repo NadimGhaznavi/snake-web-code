@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Named after **Yi qi**, not seen for 159 million years.
+
 ### Fixed
 
 - Match the daily chart's border to the page's standard 1px border weight.
