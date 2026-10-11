@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Named for the **Vintana** who died out about 66 million years ago.
+
 ### Added
 
 - Connect daily chart bars and game arrows to the same selection, highlighting
