@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.2.6] - 2026-10-11 @ 09:02
+
 The **Zalmoxes** release remembers the species who died out some 69 million years ago.
 
 ### Fixed
