@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.2.4] - 2026-10-11 @ 08:39
+
+The **Xenocyon** release celebrates the Xenocyon who were last seen about 500,000 years ago, but not by us.
+
+### Changed
+
+- Move the animated daily highscore chart inside Top 10 Daily Games, below its
+  controls, with a border aligned to the game GIF instead of a separate panel.
+
 ## [4.2.3] - 2026-10-11 @ 08:26
 
 The **Wiwaxia** release recalls this beast who roamed the Earth 505 million years ago.
