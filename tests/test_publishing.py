@@ -185,7 +185,8 @@ class PublishingTests(unittest.TestCase):
         self.assertEqual(state['frames'][0]['configurations'], [dict(id=1, high_score=40)])
         self.assertIn('reports/games/daily-progress.gif', self.remote_page())
         self.assertEqual(self.git(self.repo, 'diff-tree', '--no-commit-id', '--name-only', '-r', 'HEAD').splitlines(),
-                         sorted(['index.md', self.publisher.PROGRESS_PATH, self.publisher.PROGRESS_GIF_PATH]))
+                         sorted(['index.md', self.publisher.PROGRESS_PATH, self.publisher.PROGRESS_GIF_PATH,
+                                 self.publisher.PROGRESS_SPRITE_PATH]))
 
     def test_report_paths_refuse_symlinks_before_homepage_changes(self):
         outside = self.root / 'outside'
