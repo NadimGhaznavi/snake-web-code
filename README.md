@@ -88,7 +88,8 @@ and slots. Repeated passes in one slot reuse its saved observation and GIF.
 
 Collection starts with the current ranking; earlier frames are never backfilled.
 Partial days and missed publications show only actual observations; their
-timestamps remain in the JSON. The JSON, GIF and homepage share a commit and survive restarts and
+collection timestamps appear inside each GIF frame as `DD Mon YYYY - HH:MM`
+and remain in the JSON. The JSON, GIF and homepage share a commit and survive restarts and
 failed pushes. Renderer upgrades regenerate from saved observations.
 
 ## Static report slice
