@@ -121,6 +121,20 @@ class AppDb:
         """Use the source database's clock, which also timestamps completions."""
         return self._db.query('SELECT CURRENT_DATE AS day')[0]['day']
 
+    def get_daily_progress_time(self):
+        """Sample the same source clock that timestamps completed configurations."""
+        return self._db.query('SELECT CURRENT_TIMESTAMP AS observed_at')[0]['observed_at']
+
+    def get_daily_configurations(self, day, observed_at) -> list[dict]:
+        """Top ten completed configurations, independent of captured-game availability."""
+        return self._db.query('''
+            SELECT id, high_score FROM simulation_runs
+            WHERE status = 'completed' AND high_score IS NOT NULL
+              AND completed_at >= %s AND completed_at < %s
+              AND completed_at <= %s
+            ORDER BY high_score DESC, id ASC LIMIT 10
+        ''', (day, day + timedelta(days=1), observed_at))
+
     def get_daily_runs(self, day) -> list[dict]:
         """Rank completed results for one source day; captures are checked over ZMQ."""
         return self._db.query('''
