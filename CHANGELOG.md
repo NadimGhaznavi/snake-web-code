@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+This release remembers the **Irish Elk** who roamed the earth some 7,700 years ago. This animal's antlers spanned almost 14 feet!
+
+### Changed
+
+- Expand Top 3 Daily Games to Top 10 Daily Games, retaining cached animations and wrapping navigation.
+
 ## [3.1.2] - 2026-10-10 @ 14:55
 
 The **Winifred** release is dedicated to [Winifred Edgerton Merrill](https://en.wikipedia.org/wiki/Winifred_Edgerton_Merrill).
