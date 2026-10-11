@@ -43,7 +43,7 @@ Visits share a bordered footer at the bottom.
 
 Each publication pass searches simulations completed that day, ranked by score
 descending and numeric simulation ID ascending for ties. The source database's
-current date defines the day, matching its completion timestamps. Incomplete,
+UTC date defines the day, matching Snake Lab's UTC completion timestamps. Incomplete,
 unscored, and legacy SVG-only simulations are excluded; zero scores qualify.
 There is no backfill or special rollout data handling.
 
@@ -83,9 +83,10 @@ on the right, with simulation IDs and scores above a common zero-based axis.
 `reports/data/daily-progress.json` saves observations and
 `reports/games/daily-progress.gif` animates them. Frames pause for two seconds,
 with five seconds on the last frame. A complete day has 48 frames and a 99-second
-loop. Midnight closes the preceding day's final interval; the first observation
-after midnight starts a fresh day. The source database's clock defines both days
-and slots. Repeated passes in one slot reuse its saved observation and GIF.
+loop. Midnight UTC closes the preceding day's final interval; the 00:30 UTC
+observation starts a fresh day. The database session uses UTC, matching Snake Lab's
+completion timestamps and defining days and slots. Repeated passes in one slot
+reuse its saved observation and GIF.
 Manual `--once` / `push-now` publications refresh the site without collecting
 chart observations. They reuse the saved animation, including across day rollover;
 before the first scheduled collection, the chart is blank. Saved frames can still
@@ -93,8 +94,10 @@ be rendered again when a renderer upgrade or missing GIF requires it.
 
 Collection starts with the current ranking; earlier frames are never backfilled.
 Partial days and missed publications show only actual observations; their
-collection timestamps appear inside each GIF frame as `DD Mon YYYY - HH:MM`
-and remain in the JSON. The JSON, GIF and homepage share a commit and survive restarts and
+collection timestamps appear in Toronto time inside each GIF frame as
+`DD Mon YYYY - HH:MM`. New JSON observations include the UTC offset; older saved
+observations retain their original local timestamps and rankings. The JSON, GIF
+and homepage share a commit and survive restarts and
 failed pushes. Renderer upgrades regenerate from saved observations.
 
 ## Static report slice

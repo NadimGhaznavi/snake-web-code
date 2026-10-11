@@ -1,15 +1,17 @@
 """Save observed half-hour rankings and render the day's configuration progress."""
 
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from hashlib import sha256
 from io import BytesIO
 import json
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from PIL import Image, ImageDraw, ImageFont
 
 
-RENDERER_VERSION = 3
+RENDERER_VERSION = 4
+DISPLAY_TIMEZONE = ZoneInfo('America/Toronto')
 FONT = Path(__file__).parent / 'fonts' / 'DejaVuSansMono.ttf'
 MONTHS = ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
           'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec')
@@ -89,6 +91,9 @@ def render_progress(state):
         draw.text((426, 420), 'Configuration (simulation ID)', anchor='mm',
                   font=fonts[24], fill='#a7b8cb')
         observed_at = datetime.fromisoformat(frame['observed_at'])
+        # Older observations used local time without an offset; retain their labels.
+        if observed_at.tzinfo is not None:
+            observed_at = observed_at.astimezone(DISPLAY_TIMEZONE)
         timestamp = (f'{observed_at:%d} {MONTHS[observed_at.month - 1]} '
                      f'{observed_at:%Y - %H:%M}')
         draw.text((24, 450), timestamp, font=fonts[24], fill='#a7b8cb')
@@ -116,7 +121,8 @@ def export_daily_progress(appdb, publisher, *, collect=True):
         changed = not state['frames'] or slot != state['frames'][-1]['slot']
         if changed:
             rows = [configuration_record(row) for row in appdb.get_daily_configurations(day, now)]
-            state['frames'].append(dict(slot=slot, observed_at=now.isoformat(), configurations=rows))
+            state['frames'].append(dict(slot=slot, observed_at=now.replace(tzinfo=timezone.utc).isoformat(),
+                                       configurations=rows))
     regenerate = changed or state['renderer'] != RENDERER_VERSION
     state['renderer'] = RENDERER_VERSION
     content = json.dumps(state, indent=2) + '\n'
