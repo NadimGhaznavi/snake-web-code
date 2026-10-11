@@ -9,6 +9,7 @@ from string import Template
 
 from snake_web.activity.EventLogExport import export_event_log
 from snake_web.activity.DailyGames import export_daily_games, render_daily_games
+from snake_web.activity.DailyProgress import export_daily_progress
 from snake_web.activity.GoldenHistory import append_golden_history, read_golden_history
 from snake_web.activity.HighscoreHistory import append_history, read_history
 from snake_web.activity.RunScoreHistory import append_scores
@@ -19,7 +20,7 @@ from snake_web.entity.ExperimentStatus import ExperimentStatus
 _TEMPLATE = Template(Path(__file__).with_name('homepage.html').read_text())
 
 
-def render_status(status: ExperimentStatus, hostname: str, last_updated: str = '', games=()) -> str:
+def render_status(status: ExperimentStatus, hostname: str, last_updated: str = '', games=(), progress='') -> str:
     def number(value, *, optional=False, commas=False):
         if optional and value is None:
             return '—'
@@ -39,6 +40,7 @@ def render_status(status: ExperimentStatus, hostname: str, last_updated: str = '
         moves_made=number(status.moves_made, commas=True),
         last_updated=escape(last_updated),
         daily_games=render_daily_games(games),
+        daily_progress=progress,
         game_position=f'1 / {len(games)}' if games else '',
     )
 
@@ -52,6 +54,7 @@ class PublishStatus:
         status = self._appdb.get_experiment_status()
         with self._publisher.session():
             games, daily_files = export_daily_games(self._appdb, self._publisher)
+            progress, progress_files = export_daily_progress(self._appdb, self._publisher)
             existing = self._publisher.read_history()
             history = read_history(existing)
             records = self._appdb.get_highscore_history(history[-1]['event_id'] if history else 0)
@@ -68,6 +71,7 @@ class PublishStatus:
             top_runs = self._appdb.get_top_runs()
             reports = {
                 **daily_files,
+                **progress_files,
                 self._publisher.DAILY_SCRIPT_PATH: (assets / 'daily-games.js').read_text(),
                 self._publisher.TOP_RUNS_PATH: render_top_runs(top_runs),
                 self._publisher.THINKING_PATH: render_top_runs(top_runs, thinking=True),
@@ -91,12 +95,12 @@ class PublishStatus:
             previous_page = self._publisher.read_status()
             match = re.search(r'<!-- last-updated -->([^<]*)<!-- /last-updated -->', previous_page)
             previous_time = match.group(1) if match else ''
-            page = render_status(status, socket.gethostname(), previous_time, games)
+            page = render_status(status, socket.gethostname(), previous_time, games, progress)
             if page != previous_page or any(
                     self._publisher.read_bytes(name) != (content if isinstance(content, bytes)
                                                         else content.encode('utf-8'))
                     for name, content in reports.items()):
                 page = render_status(status, socket.gethostname(),
-                                     datetime.now().astimezone().strftime('%Y-%m-%d %H:%M:%S %Z (%z)'), games)
+                                     datetime.now().astimezone().strftime('%Y-%m-%d %H:%M:%S %Z (%z)'), games, progress)
             changed = self._publisher.publish(page, reports)
         return f"Experiment homepage: {'published' if changed else 'unchanged'}"

@@ -1,6 +1,7 @@
 """Real Git integration tests; every repository and remote is temporary."""
 
 import fcntl
+import json
 import socket
 import re
 from datetime import date, datetime, timedelta, timezone
@@ -17,6 +18,7 @@ from unittest.mock import Mock, patch
 
 from snake_web.activity.AppDb import AppDb
 from snake_web.activity.PublishStatus import PublishStatus, render_status
+from snake_web.activity.DailyProgress import export_daily_progress
 from snake_web.interface.DbMgr import DbMgr
 from snake_web.interface.GitPublisher import GitPublisher
 from snake_web.entity.ExperimentStatus import ExperimentStatus
@@ -56,6 +58,8 @@ class PublishingTests(unittest.TestCase):
         self.appdb.get_top_runs.return_value = []
         self.appdb.get_daily_game_day.return_value = date(2026, 10, 10)
         self.appdb.get_daily_runs.return_value = []
+        self.appdb.get_daily_progress_time.return_value = datetime(2026, 10, 10, 12, 30)
+        self.appdb.get_daily_configurations.return_value = []
         self.activity = PublishStatus(self.appdb, self.publisher)
 
     def git(self, directory, *args):
@@ -65,7 +69,8 @@ class PublishingTests(unittest.TestCase):
     def expected_page(self, status):
         page = self.page.read_text()
         match = re.search(r'<!-- last-updated -->([^<]*)<!-- /last-updated -->', page)
-        return render_status(status, socket.gethostname(), match.group(1) if match else '')
+        progress, _ = export_daily_progress(self.appdb, self.publisher)
+        return render_status(status, socket.gethostname(), match.group(1) if match else '', progress=progress)
 
     def remote_page(self):
         return self.git(self.remote, 'show', 'main:index.md')
@@ -158,6 +163,29 @@ class PublishingTests(unittest.TestCase):
         self.appdb.get_highscore_history.return_value = []
         self.assertIn('unchanged', self.activity.run())
         self.appdb.get_highscore_history.assert_called_with(20)
+
+    def test_progress_failed_push_retry_and_next_observation(self):
+        self.appdb.get_daily_configurations.return_value = [dict(id=1, high_score=40)]
+        hook = self.remote / 'hooks/pre-receive'
+        hook.write_text('#!/bin/sh\nexit 1\n')
+        hook.chmod(0o755)
+        with self.assertRaisesRegex(RuntimeError, 'Git push failed'):
+            self.activity.run()
+        head = self.git(self.repo, 'rev-parse', 'HEAD')
+        hook.unlink()
+        self.appdb.get_daily_configurations.reset_mock()
+        self.activity.run()
+        self.appdb.get_daily_configurations.assert_not_called()
+        self.assertEqual(head, self.git(self.remote, 'rev-parse', 'main'))
+        self.appdb.get_daily_progress_time.return_value = datetime(2026, 10, 10, 13)
+        self.appdb.get_daily_configurations.return_value = [dict(id=2, high_score=42), dict(id=1, high_score=40)]
+        self.activity.run()
+        state = json.loads((self.repo / self.publisher.PROGRESS_PATH).read_text())
+        self.assertEqual([frame['slot'] for frame in state['frames']], [24, 25])
+        self.assertEqual(state['frames'][0]['configurations'], [dict(id=1, high_score=40)])
+        self.assertIn('Daily Configuration Progress', self.remote_page())
+        self.assertEqual(self.git(self.repo, 'diff-tree', '--no-commit-id', '--name-only', '-r', 'HEAD').splitlines(),
+                         sorted(['index.md', self.publisher.PROGRESS_PATH, self.publisher.PROGRESS_GIF_PATH]))
 
     def test_report_paths_refuse_symlinks_before_homepage_changes(self):
         outside = self.root / 'outside'
