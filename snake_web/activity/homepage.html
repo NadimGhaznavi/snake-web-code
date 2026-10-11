@@ -11,10 +11,10 @@ classes: wide
 .snake-experiment h2 { margin: 0 0 .75rem; border: 0; font: bold 1.65em/1.3 "Courier New", Courier, monospace; }
 .snake-experiment h3 { margin: 0 0 .75rem; font: bold 1.2em/1.4 "Courier New", Courier, monospace; }
 .snake-experiment .experiment-layout { display: grid; grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
-.snake-experiment .experiment-status, .snake-experiment .experiment-reports, .snake-experiment .daily-games, .snake-experiment .daily-progress { min-width: 0; padding: 1rem; border: 1px solid #40566e; }
+.snake-experiment .experiment-status, .snake-experiment .experiment-reports, .snake-experiment .daily-games { min-width: 0; padding: 1rem; border: 1px solid #40566e; }
 .snake-experiment .daily-progress { margin-top: 1rem; }
 .snake-experiment .experiment-visualizations { min-width: 0; }
-.snake-experiment .progress-chart { display: block; width: 100%; height: auto; }
+.snake-experiment .progress-chart { display: block; width: 100%; height: auto; border: 2px solid #40566e; }
 .snake-experiment .experiment-reports { margin-top: 1rem; }
 .snake-experiment .experiment-metrics, .snake-experiment .report-names { display: flex; flex-direction: column; gap: .35rem; margin: 0; padding: 0; list-style: none; }
 .snake-experiment li { margin: 0; padding: 0; font-size: 1em; overflow-wrap: anywhere; }
@@ -70,9 +70,9 @@ classes: wide
           <span data-game-position aria-live="polite">${game_position}</span>
           <button type="button" data-game-step="1" aria-label="Next game" disabled>&#8594;</button>
         </nav>
-      </section>
-      <section class="daily-progress" aria-label="Daily configuration score progress">
-        ${daily_progress}
+        <section class="daily-progress" aria-label="Daily configuration score progress">
+          ${daily_progress}
+        </section>
       </section>
     </div>
   </div>
