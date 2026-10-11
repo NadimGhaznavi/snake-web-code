@@ -2,7 +2,6 @@
 
 from datetime import date, datetime, timedelta
 from hashlib import sha256
-from html import escape
 from io import BytesIO
 import json
 from pathlib import Path
@@ -100,21 +99,6 @@ def render_progress(state):
     return output.getvalue()
 
 
-def render_sprite(data):
-    """Expose the GIF's exact frames for synchronized browser hit targets."""
-    with Image.open(BytesIO(data)) as gif:
-        columns = min(4, gif.n_frames)
-        rows = (gif.n_frames + columns - 1) // columns
-        sheet = Image.new('RGB', (gif.width * columns, gif.height * rows), '#101720')
-        for index in range(gif.n_frames):
-            gif.seek(index)
-            sheet.paste(gif.convert('RGB'), ((index % columns) * gif.width,
-                                           (index // columns) * gif.height))
-        output = BytesIO()
-        sheet.save(output, format='PNG')
-        return output.getvalue()
-
-
 def export_daily_progress(appdb, publisher):
     now = appdb.get_daily_progress_time()
     day, slot = observation_slot(now)
@@ -136,20 +120,8 @@ def export_daily_progress(appdb, publisher):
     data = publisher.read_bytes(publisher.PROGRESS_GIF_PATH)
     if regenerate or not data.startswith((b'GIF87a', b'GIF89a')):
         data = render_progress(state)
-        regenerate = True
-    sprite = publisher.read_bytes(publisher.PROGRESS_SPRITE_PATH)
-    if regenerate or not sprite.startswith(b'\x89PNG\r\n\x1a\n'):
-        sprite = render_sprite(data)
     token = sha256(data).hexdigest()[:16]
-    maximum = max((row['high_score'] for frame in state['frames']
-                   for row in frame['configurations']), default=0)
-    playback = dict(frames=state['frames'], ceiling=max(50, ((maximum + 9) // 10) * 10),
-                    sprite=f'{publisher.PROGRESS_SPRITE_PATH}?v={sha256(sprite).hexdigest()[:16]}')
-    metadata = escape(json.dumps(playback, separators=(',', ':')), quote=True)
-    metadata = metadata.replace('{', '&#123;').replace('}', '&#125;')
-    html = (f'<div class="progress-player" data-progress="{metadata}">'
-            f'<img class="progress-chart" src="{publisher.PROGRESS_GIF_PATH}?v={token}" '
+    html = (f'<img class="progress-chart" src="{publisher.PROGRESS_GIF_PATH}?v={token}" '
             'alt="Animated top ten configuration scores, lowest to highest, '
-            f'for {state["day"]}; {len(state["frames"])} observed half-hour updates."></div>')
-    return html, {publisher.PROGRESS_PATH: content, publisher.PROGRESS_GIF_PATH: data,
-                  publisher.PROGRESS_SPRITE_PATH: sprite}
+            f'for {state["day"]}; {len(state["frames"])} observed half-hour updates.">')
+    return html, {publisher.PROGRESS_PATH: content, publisher.PROGRESS_GIF_PATH: data}

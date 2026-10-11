@@ -36,6 +36,7 @@ class GitPublisher:
     DAILY_SCRIPT_PATH = "reports/daily-games.js"
     PROGRESS_PATH = "reports/data/daily-progress.json"
     PROGRESS_GIF_PATH = "reports/games/daily-progress.gif"
+    # Keep the retired frame sheet managed for failed-push retries and site resets.
     PROGRESS_SPRITE_PATH = "reports/games/daily-progress.png"
     DAILY_GIF_PATHS = tuple(f"reports/games/daily-{rank}.gif"
                            for rank in range(1, DSnakeWeb.DAILY_GAME_LIMIT + 1))
