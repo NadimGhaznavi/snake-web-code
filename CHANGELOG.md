@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+The **Wiwaxia** release recalls this beast who roamed the Earth 505 million years ago.
+
+### Changed
+
+- Restore the daily chart to a simple looping GIF, removing bar selection and
+  highlighting while keeping the game arrows independent.
+
 ## [4.2.0] - 2026-10-11 @ 08:15
 
 Named for the **Vintana** who died out about 66 million years ago.
