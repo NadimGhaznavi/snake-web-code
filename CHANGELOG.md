@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.2.3] - 2026-10-11 @ 08:26
+
 The **Wiwaxia** release recalls this beast who roamed the Earth 505 million years ago.
 
 ### Changed
