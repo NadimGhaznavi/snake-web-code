@@ -36,7 +36,7 @@ The homepage follows Ax3l's dark bordered Status/Reports/game layout, headed
 **Live Ax3l Experiment Data**. **Top 10 Daily Games** shows captured games only,
 with wrapping back/forward buttons and the simulation ID and high score
 embedded above the game in each GIF. No qualifying games leave a blank viewer; one game disables both arrows.
-The panels stack on narrow screens. Daily Configuration Progress sits below the
+The panels stack on narrow screens. The daily progress chart sits below the
 daily games on desktop and after the other panels on mobile. Last Updated and
 Visits share a bordered footer at the bottom.
 
@@ -87,8 +87,9 @@ after midnight starts a fresh day. The source database's clock defines both days
 and slots. Repeated passes in one slot reuse its saved observation and GIF.
 
 Collection starts with the current ranking; earlier frames are never backfilled.
-Partial days and missed publications show only actual observations, with their
-timestamps. The JSON, GIF and homepage share a commit and survive restarts and
+Partial days and missed publications show only actual observations; their
+collection timestamps appear inside each GIF frame as `DD Mon YYYY - HH:MM`
+and remain in the JSON. The JSON, GIF and homepage share a commit and survive restarts and
 failed pushes. Renderer upgrades regenerate from saved observations.
 
 ## Static report slice

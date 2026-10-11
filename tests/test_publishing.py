@@ -183,7 +183,7 @@ class PublishingTests(unittest.TestCase):
         state = json.loads((self.repo / self.publisher.PROGRESS_PATH).read_text())
         self.assertEqual([frame['slot'] for frame in state['frames']], [24, 25])
         self.assertEqual(state['frames'][0]['configurations'], [dict(id=1, high_score=40)])
-        self.assertIn('Daily Configuration Progress', self.remote_page())
+        self.assertIn('reports/games/daily-progress.gif', self.remote_page())
         self.assertEqual(self.git(self.repo, 'diff-tree', '--no-commit-id', '--name-only', '-r', 'HEAD').splitlines(),
                          sorted(['index.md', self.publisher.PROGRESS_PATH, self.publisher.PROGRESS_GIF_PATH]))
 
