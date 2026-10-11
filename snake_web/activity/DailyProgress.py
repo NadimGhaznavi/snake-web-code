@@ -9,8 +9,10 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 
-RENDERER_VERSION = 1
+RENDERER_VERSION = 3
 FONT = Path(__file__).parent / 'fonts' / 'DejaVuSansMono.ttf'
+MONTHS = ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+          'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec')
 
 
 def observation_slot(now):
@@ -63,9 +65,6 @@ def render_progress(state):
     for frame in state['frames']:
         image = Image.new('RGB', (800, 480), '#101720')
         draw = ImageDraw.Draw(image)
-        time_label = '24:00' if frame['observed_at'][:10] != state['day'] else frame['observed_at'][11:16]
-        draw.text((24, 18), state['day'] + '  |  ' + time_label,
-                  font=fonts[32], fill='#d5dfeb')
         draw.text((24, 60), 'High score', font=fonts[28], fill='#a7b8cb')
         for tick in range(6):
             value = ceiling * tick // 5
@@ -89,9 +88,11 @@ def render_progress(state):
             draw.text((x, 390), str(row['id']), anchor='mm', font=fonts[24], fill='#a7b8cb')
         draw.text((426, 420), 'Configuration (simulation ID)', anchor='mm',
                   font=fonts[24], fill='#a7b8cb')
-        draw.text((24, 450), f'Observation {frame["slot"] + 1}/48  |  '
-                  f'{len(rows)}/10 configurations', font=fonts[24], fill='#a7b8cb')
-        images.append(image)
+        observed_at = datetime.fromisoformat(frame['observed_at'])
+        timestamp = (f'{observed_at:%d} {MONTHS[observed_at.month - 1]} '
+                     f'{observed_at:%Y - %H:%M}')
+        draw.text((24, 450), timestamp, font=fonts[24], fill='#a7b8cb')
+        images.append(image.crop((0, 42, 800, 480)))
     output = BytesIO()
     images[0].save(output, format='GIF', save_all=True, append_images=images[1:],
                    duration=[2000] * (len(images) - 1) + [5000], loop=0, disposal=2)

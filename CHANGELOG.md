@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+This release remembers **Ursavus**, who died out about 5 million years ago.
+
+### Changed
+
+- Remove the heading above the daily configuration progress chart.
+- Remove the chart's date/time line and its reserved space.
+- Replace the GIF's observation/configuration counts with each frame's collection
+  timestamp in `DD Mon YYYY - HH:MM` format.
+
 ## [4.0.0] - 2026-10-11 @ 07:16
 
 This release remembers the **Thylacine** who became extinct in 1936.

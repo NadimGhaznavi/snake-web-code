@@ -14,7 +14,6 @@ classes: wide
 .snake-experiment .experiment-status, .snake-experiment .experiment-reports, .snake-experiment .daily-games, .snake-experiment .daily-progress { min-width: 0; padding: 1rem; border: 1px solid #40566e; }
 .snake-experiment .daily-progress { margin-top: 1rem; }
 .snake-experiment .experiment-visualizations { min-width: 0; }
-.snake-experiment .daily-progress h3 { text-align: center; }
 .snake-experiment .progress-chart { display: block; width: 100%; height: auto; }
 .snake-experiment .experiment-reports { margin-top: 1rem; }
 .snake-experiment .experiment-metrics, .snake-experiment .report-names { display: flex; flex-direction: column; gap: .35rem; margin: 0; padding: 0; list-style: none; }
@@ -72,8 +71,7 @@ classes: wide
           <button type="button" data-game-step="1" aria-label="Next game" disabled>&#8594;</button>
         </nav>
       </section>
-      <section class="daily-progress" aria-labelledby="progress-title">
-        <h3 id="progress-title">Daily Configuration Progress</h3>
+      <section class="daily-progress" aria-label="Daily configuration score progress">
         ${daily_progress}
       </section>
     </div>
