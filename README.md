@@ -36,7 +36,7 @@ The homepage follows Ax3l's dark bordered Status/Reports/game layout, headed
 **Live Ax3l Experiment Data**. **Top 10 Daily Games** shows captured games only,
 with wrapping back/forward buttons and the simulation ID and high score
 embedded above the game in each GIF. No qualifying games leave a blank viewer; one game disables both arrows.
-The panels stack on narrow screens. Daily Configuration Progress sits below the
+The panels stack on narrow screens. The daily progress chart sits below the
 daily games on desktop and after the other panels on mobile. Last Updated and
 Visits share a bordered footer at the bottom.
 
