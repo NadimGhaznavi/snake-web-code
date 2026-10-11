@@ -59,7 +59,7 @@ async function drawDistribution(data, chart, detail) {
     barmode: 'overlay', paper_bgcolor: '#151f2b', plot_bgcolor: '#151f2b',
     font: {color: '#d5dfeb', family: 'Courier New, monospace'},
     margin: {l: 65, r: 20, t: 30, b: 140},
-    legend: {orientation: 'h', x: 0, y: -.25, yanchor: 'top'},
+    legend: {orientation: 'h', x: 0, y: 0, yref: 'container', yanchor: 'bottom'},
     xaxis: {title: {text: 'Run high score'}, gridcolor: '#40566e', automargin: true},
     yaxis: {title: {text: 'Number of runs'}, rangemode: 'tozero',
             tickformat: ',d', gridcolor: '#40566e', automargin: true},
