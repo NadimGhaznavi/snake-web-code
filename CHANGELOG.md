@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.2.6] - 2026-10-11 @ 09:02
+
+The **Zalmoxes** release remembers the species who died out some 69 million years ago.
+
+### Fixed
+
+- Keep manual push-now publications out of daily chart collection; only scheduled
+  half-hour passes add observations, while manual publications reuse the animation.
+
 ## [4.2.5] - 2026-10-11 @ 08:49
 
 Named after **Yi qi**, not seen for 159 million years.

@@ -69,7 +69,7 @@ class PublishingTests(unittest.TestCase):
     def expected_page(self, status):
         page = self.page.read_text()
         match = re.search(r'<!-- last-updated -->([^<]*)<!-- /last-updated -->', page)
-        progress, _ = export_daily_progress(self.appdb, self.publisher)
+        progress, _ = export_daily_progress(self.appdb, self.publisher, collect=False)
         return render_status(status, socket.gethostname(), match.group(1) if match else '', progress=progress)
 
     def remote_page(self):
@@ -187,6 +187,41 @@ class PublishingTests(unittest.TestCase):
         self.assertIn('reports/games/daily-progress.gif', self.remote_page())
         self.assertEqual(self.git(self.repo, 'diff-tree', '--no-commit-id', '--name-only', '-r', 'HEAD').splitlines(),
                          sorted(['index.md', self.publisher.PROGRESS_PATH, self.publisher.PROGRESS_GIF_PATH]))
+
+    def test_manual_publication_refreshes_games_without_collecting_progress(self):
+        from test_daily_games import run, frames
+        self.appdb.get_daily_configurations.return_value = [dict(id=1, high_score=40)]
+        self.activity.run()
+        saved = {path: (self.repo / path).read_bytes() for path in
+                 (self.publisher.PROGRESS_PATH, self.publisher.PROGRESS_GIF_PATH)}
+        self.appdb.get_daily_runs.return_value = [run(2, 50)]
+        self.appdb.get_daily_configurations.return_value = [dict(id=2, high_score=50)]
+        self.appdb.get_daily_progress_time.return_value = datetime(2026, 10, 11, 1)
+        self.appdb.get_daily_progress_time.reset_mock()
+        self.appdb.get_daily_configurations.reset_mock()
+        with patch('snake_web.activity.DailyGames.SnakeLab') as snake:
+            snake.return_value.get_highscore_frames.return_value = frames(50)
+            self.activity.run(collect_progress=False)
+        self.assertIn('Simulation #2 - Highscore 50', self.remote_page())
+        self.appdb.get_daily_progress_time.assert_not_called()
+        self.appdb.get_daily_configurations.assert_not_called()
+        for path, content in saved.items():
+            self.assertEqual((self.repo / path).read_bytes(), content)
+        self.activity.run()
+        state = json.loads((self.repo / self.publisher.PROGRESS_PATH).read_text())
+        self.assertEqual(state['day'], '2026-10-11')
+        self.assertEqual(state['frames'][0]['configurations'], [dict(id=2, high_score=50)])
+
+    def test_manual_publication_before_first_scheduled_observation(self):
+        self.assertIn('published', self.activity.run(collect_progress=False))
+        self.appdb.get_daily_progress_time.assert_not_called()
+        self.appdb.get_daily_configurations.assert_not_called()
+        for path in (self.publisher.PROGRESS_PATH, self.publisher.PROGRESS_GIF_PATH):
+            self.assertFalse((self.repo / path).exists())
+        self.assertNotIn('class="progress-chart"', self.remote_page())
+        self.assertIn('unchanged', self.activity.run(collect_progress=False))
+        self.activity.run()
+        self.assertIn('class="progress-chart"', self.remote_page())
 
     def test_report_paths_refuse_symlinks_before_homepage_changes(self):
         outside = self.root / 'outside'
@@ -457,7 +492,7 @@ class ServiceTests(unittest.TestCase):
             event.return_value.is_set.return_value = False
             self.assertEqual(server.main(), 0)
             event.return_value.wait.assert_not_called()
-            publish.assert_called_once()
+            publish.assert_called_once_with(collect_progress=False)
 
     def test_once_failure_returns_nonzero(self):
         with patch.object(sys, 'argv', ['snake-web', '--once']), \
