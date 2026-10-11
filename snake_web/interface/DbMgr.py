@@ -16,6 +16,7 @@ class DbMgr:
             password=os.environ["DB_PASSWORD"],
             database=os.environ.get("DB_NAME", "snakelab"),
             charset="utf8mb4", cursorclass=DictCursor,
+            init_command="SET time_zone = '+00:00'",
             autocommit=False, connect_timeout=10, read_timeout=30, write_timeout=30,
         )
         try:

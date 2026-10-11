@@ -8,7 +8,7 @@ import sqlite3
 import unittest
 from unittest.mock import Mock, patch
 
-from PIL import Image
+from PIL import Image, ImageDraw
 
 from snake_web.activity.AppDb import AppDb
 from snake_web.activity.DailyProgress import export_daily_progress, read_progress, render_progress
@@ -60,6 +60,45 @@ class DailyProgressTests(unittest.TestCase):
         self.assertTrue(files[GitPublisher.PROGRESS_GIF_PATH].startswith(b'GIF89a'))
         self.app.get_daily_progress_time.assert_not_called()
         self.app.get_daily_configurations.assert_not_called()
+
+    def test_utc_observation_includes_completed_score_50_and_preserves_legacy_frames(self):
+        connection = sqlite3.connect(':memory:')
+        self.addCleanup(connection.close)
+        connection.row_factory = sqlite3.Row
+        connection.execute('CREATE TABLE simulation_runs (id INT, high_score INT, status TEXT, completed_at TEXT)')
+        connection.executemany('INSERT INTO simulation_runs VALUES (?, ?, ?, ?)', [
+            (2019, 44, 'completed', '2026-10-11 06:00:00'),
+            (2030, 50, 'completed', '2026-10-11 11:05:40.726437'),
+            (2032, 55, 'completed', '2026-10-11 13:30:12')])
+        legacy = dict(version=1, renderer=3, day='2026-10-11', frames=[dict(
+            slot=17, observed_at='2026-10-11T09:00:11',
+            configurations=[dict(id=2019, high_score=44)])])
+        self.files[GitPublisher.PROGRESS_PATH] = json.dumps(legacy)
+        db = Mock()
+        db.query.side_effect = lambda sql, params: [dict(row) for row in connection.execute(
+            sql.replace('%s', '?'), tuple(str(value) for value in params))]
+        self.app.get_daily_configurations.side_effect = AppDb(db).get_daily_configurations
+        _, state = self.export('2026-10-11T13:30:11')
+        # A result completed after this observation remains excluded.
+        self.assertEqual(state['frames'][0], legacy['frames'][0])
+        self.assertEqual(state['frames'][-1]['observed_at'], '2026-10-11T13:30:11+00:00')
+        self.assertEqual(state['frames'][-1]['configurations'],
+                         [dict(id=2030, high_score=50), dict(id=2019, high_score=44)])
+        with Image.open(BytesIO(self.files[GitPublisher.PROGRESS_GIF_PATH])) as gif:
+            gif.seek(gif.n_frames - 1)
+            self.assertEqual(gif.convert('RGB').getpixel((741, 60)), (121, 184, 243))
+
+    def test_footer_uses_toronto_time_and_keeps_legacy_local_labels(self):
+        original = ImageDraw.ImageDraw.text
+        for observed_at, expected in [
+            ('2026-10-11T13:30:00+00:00', '11 Oct 2026 - 09:30'),
+            ('2026-01-11T13:30:00+00:00', '11 Jan 2026 - 08:30'),
+            ('2026-10-11T00:30:00+00:00', '10 Oct 2026 - 20:30'),
+            ('2026-10-11T09:00:11', '11 Oct 2026 - 09:00')]:
+            with self.subTest(observed_at=observed_at), \
+                 patch.object(ImageDraw.ImageDraw, 'text', autospec=True, side_effect=original) as draw:
+                render_progress(dict(frames=[dict(observed_at=observed_at, configurations=[])]))
+                self.assertEqual(draw.call_args.args[2], expected)
 
     def test_complete_day_has_48_frames_and_99_second_loop(self):
         start = datetime(2026, 10, 11)

@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+This release celebrates Cree culture: This is the pēyak (1) release.
+
+### Fixed
+
+- Match Snake Lab's UTC completion timestamps when collecting daily scores, so
+  completed games are included promptly. Display chart timestamps in Toronto time
+  and preserve earlier observations.
+
 ## [4.2.6] - 2026-10-11 @ 09:02
 
 The **Zalmoxes** release remembers the species who died out some 69 million years ago.
