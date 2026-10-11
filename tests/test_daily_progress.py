@@ -19,7 +19,7 @@ class DailyProgressTests(unittest.TestCase):
     def setUp(self):
         self.files = {}
         self.publisher = Mock()
-        for name in ('PROGRESS_PATH', 'PROGRESS_GIF_PATH', 'PROGRESS_SPRITE_PATH'):
+        for name in ('PROGRESS_PATH', 'PROGRESS_GIF_PATH'):
             setattr(self.publisher, name, getattr(GitPublisher, name))
         self.publisher.read_history.side_effect = lambda name: self.files.get(name, '')
         self.publisher.read_bytes.side_effect = lambda name: self.files.get(name, b'')
@@ -52,8 +52,7 @@ class DailyProgressTests(unittest.TestCase):
     def test_complete_day_has_48_frames_and_99_second_loop(self):
         start = datetime(2026, 10, 11)
         # Exercise all slots without rendering every intermediate GIF again.
-        with patch('snake_web.activity.DailyProgress.render_progress', return_value=b'GIF89a'), \
-             patch('snake_web.activity.DailyProgress.render_sprite', return_value=b'\x89PNG\r\n\x1a\n'):
+        with patch('snake_web.activity.DailyProgress.render_progress', return_value=b'GIF89a'):
             for number in range(1, 48):
                 self.export((start + timedelta(minutes=30 * number)).isoformat(),
                             [dict(id=number, high_score=number)])
@@ -97,23 +96,6 @@ class DailyProgressTests(unittest.TestCase):
                     y = 328 - 270 * score / 50
                     self.assertEqual(image.getpixel((x, int(y) + 2)), (121, 184, 243))
                     self.assertEqual(image.getpixel((x, int(y) - 2)), (16, 23, 32))
-
-    def test_sprite_matches_gif_frames_and_metadata(self):
-        from html import unescape
-        import re
-        html, _ = self.export('2026-10-11T00:30:00', [dict(id=1, high_score=10)])
-        html, _ = self.export('2026-10-11T01:00:00', [dict(id=2, high_score=42), dict(id=1, high_score=10)])
-        metadata = json.loads(unescape(re.search(r'data-progress="([^"]+)"', html).group(1)))
-        self.assertEqual(metadata['ceiling'], 50)
-        self.assertEqual(len(metadata['frames']), 2)
-        self.assertIn('reports/games/daily-progress.png?v=', metadata['sprite'])
-        with Image.open(BytesIO(self.files[GitPublisher.PROGRESS_GIF_PATH])) as gif, \
-             Image.open(BytesIO(self.files[GitPublisher.PROGRESS_SPRITE_PATH])) as sprite:
-            self.assertEqual(sprite.size, (1600, 438))
-            for index in range(2):
-                gif.seek(index)
-                self.assertEqual(gif.convert('RGB').tobytes(),
-                                 sprite.crop((index * 800, 0, (index + 1) * 800, 438)).tobytes())
 
     def test_invalid_state_and_source_rows_fail(self):
         _, state = self.export('2026-10-11T12:30:00')

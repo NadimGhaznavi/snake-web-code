@@ -7,7 +7,6 @@ for (const count of [0, 1, 2, 3, 10]) {
     addEventListener(name, callback) {this.click = callback;},
   }));
   const root = {
-    closest() {return {querySelector() {return null;}};},
     querySelectorAll(selector) {return selector === '.daily-game' ? games : buttons;},
     querySelector() {return position;},
   };
