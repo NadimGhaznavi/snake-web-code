@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.2.5] - 2026-10-11 @ 08:49
+
 Named after **Yi qi**, not seen for 159 million years.
 
 ### Fixed
