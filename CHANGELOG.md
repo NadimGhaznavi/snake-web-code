@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.3.1] - 2026-10-17 @ 01:06
+
+This release celebrates the Cree language. This is the **kēkā-mitātahtosāp** (19) release.
+
+### Fixed
+
+- Show replacement food before digestion starts in game animations, then resume
+  movement once digestion finishes.
+
 ## [4.3.0] - 2026-10-11 @ 09:17
 
 This release celebrates Cree culture: This is the pēyak (1) release.

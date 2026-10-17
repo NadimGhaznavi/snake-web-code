@@ -89,3 +89,31 @@ class AnimationTests(unittest.TestCase):
             self.assertEqual(gif.info['duration'], 1000)
             self.assertGreater(gif.width, 6 * 32)
             self.assertGreater(gif.height, 6 * 32)
+
+    def test_new_food_appears_before_digestion_and_movement_resumes_afterward(self):
+        frames = score_frames([9, 10, 10])
+        frames[0]['board']['food'] = [2, 1]
+        frames[1]['board'].update(snake_body=[[1, 1], [0, 1]], food=[4, 4])
+        frames[2]['board'].update(snake_body=[[2, 1], [1, 1]], food=[4, 4])
+        images = list(SimulationAnimation._images(frames, 75))
+
+        def centre(image, x, y):
+            return image.getpixel((x * 32 + 16, y * 32 + 16))
+
+        self.assertEqual(len(images), 5)
+        self.assertEqual(centre(images[0], 4, 4), 0)
+        # Replacement food is visible before and throughout the stationary digestion.
+        for image in images[1:]:
+            self.assertEqual(centre(image, 4, 4), 4)
+            self.assertEqual(image.info['score'], 10)
+        self.assertEqual(centre(images[1], 2, 1), 3)
+        self.assertEqual(centre(images[1], 1, 1), 2)
+        self.assertEqual(images[1].info['duration'], 75)
+        self.assertEqual(centre(images[2], 2, 1), 5)
+        self.assertEqual(centre(images[3], 1, 1), 5)
+        self.assertEqual([image.info['duration'] for image in images[2:4]], [50, 50])
+        # The next captured move restores the full length and final pause.
+        self.assertEqual(centre(images[4], 3, 1), 3)
+        self.assertEqual(centre(images[4], 2, 1), 2)
+        self.assertEqual(centre(images[4], 1, 1), 2)
+        self.assertEqual(images[4].info['duration'], 1000)
