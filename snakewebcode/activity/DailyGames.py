@@ -7,9 +7,9 @@ from uuid import UUID
 
 import zmq
 
-from snake_web.activity.SimulationAnimation import SimulationAnimation
-from snake_web.constants.DSnakeWeb import DSnakeWeb
-from snake_web.interface.SnakeLab import SnakeLab
+from snakewebcode.activity.SimulationAnimation import SimulationAnimation
+from snakewebcode.constants.DSnakeWebCode import DSnakeWebCode
+from snakewebcode.interface.SnakeLab import SnakeLab
 
 
 DURATION_MS = 75
@@ -29,7 +29,7 @@ def read_daily_state(content):
     if (not isinstance(state, dict) or state.get('version') != 1
             or type(state.get('renderer')) is not int or type(state.get('duration_ms')) is not int
             or not isinstance(state.get('games'), list)
-            or len(state['games']) > DSnakeWeb.DAILY_GAME_LIMIT):
+            or len(state['games']) > DSnakeWebCode.DAILY_GAME_LIMIT):
         raise ValueError('Invalid daily games state')
     date.fromisoformat(state['day'])
     games = [game_record(row) for row in state['games']]
@@ -71,7 +71,7 @@ def export_daily_games(appdb, publisher, snake=None):
             continue  # Legacy SVG-only games never qualify.
         files[publisher.DAILY_GIF_PATHS[len(games)]] = animation
         games.append(game)
-        if len(games) == DSnakeWeb.DAILY_GAME_LIMIT:
+        if len(games) == DSnakeWebCode.DAILY_GAME_LIMIT:
             break
     state = dict(version=1, day=day.isoformat(), renderer=SimulationAnimation.VERSION,
                  duration_ms=DURATION_MS, games=games)

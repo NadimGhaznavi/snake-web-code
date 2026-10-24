@@ -6,7 +6,7 @@ from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from snake_web.interface.GitPublisher import GitPublisher
+from snakewebcode.interface.GitPublisher import GitPublisher
 
 
 EMPTY_HOME = '''---

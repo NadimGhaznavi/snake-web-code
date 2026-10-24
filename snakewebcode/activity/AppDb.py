@@ -3,9 +3,9 @@
 import json
 from datetime import timedelta
 
-from snake_web.constants.PublicEvents import EVENT_LABELS, CONFIGURATION_FIELDS
-from snake_web.entity.ExperimentStatus import ExperimentStatus
-from snake_web.interface.DbMgr import DbMgr
+from snakewebcode.constants.PublicEvents import EVENT_LABELS, CONFIGURATION_FIELDS
+from snakewebcode.entity.ExperimentStatus import ExperimentStatus
+from snakewebcode.interface.DbMgr import DbMgr
 
 
 def completed_cycles(rows: list[dict]) -> int:

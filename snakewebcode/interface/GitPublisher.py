@@ -7,7 +7,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 
-from snake_web.constants.DSnakeWeb import DSnakeWeb
+from snakewebcode.constants.DSnakeWebCode import DSnakeWebCode
 
 
 class GitPublisher:
@@ -39,7 +39,7 @@ class GitPublisher:
     # Keep the retired frame sheet managed for failed-push retries and site resets.
     PROGRESS_SPRITE_PATH = "reports/games/daily-progress.png"
     DAILY_GIF_PATHS = tuple(f"reports/games/daily-{rank}.gif"
-                           for rank in range(1, DSnakeWeb.DAILY_GAME_LIMIT + 1))
+                           for rank in range(1, DSnakeWebCode.DAILY_GAME_LIMIT + 1))
     OWNED_PATHS = (STATUS_PATH, REPORT_PATH, HISTORY_PATH, SCRIPT_PATH,
                    DISTRIBUTION_PATH, DISTRIBUTION_SCRIPT_PATH, SCORES_PATH,
                    TOP_RUNS_PATH, TOP_RUNS_SCRIPT_PATH, THINKING_PATH,

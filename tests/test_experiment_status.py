@@ -10,10 +10,10 @@ import sqlite3
 import unittest
 from xml.etree import ElementTree
 
-from snake_web.activity.AppDb import AppDb, completed_cycles
-from snake_web.activity.PublishStatus import render_status
-from snake_web.activity.SimulationBoard import board_svg
-from snake_web.entity.ExperimentStatus import ExperimentStatus
+from snakewebcode.activity.AppDb import AppDb, completed_cycles
+from snakewebcode.activity.PublishStatus import render_status
+from snakewebcode.activity.SimulationBoard import board_svg
+from snakewebcode.entity.ExperimentStatus import ExperimentStatus
 
 
 SNAPSHOT = {'board': {'grid_size': [4, 3], 'snake_head': [2, 1],

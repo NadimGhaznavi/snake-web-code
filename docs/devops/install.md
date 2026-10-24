@@ -14,7 +14,7 @@ must already be running locally with the Snake Lab schema (including
 `simulation_runs.high_score_snapshot` and the v2 `configurations` table) and the `ax3l.events` and
 `ax3l.event_messages`, and `ax3l.experiment_highscores` tables installed, and root
 must be able to administer it through its Unix socket without a password. The installer creates a
-virtual environment under `/opt/prod/snake-web/venv` and installs the PyMySQL
+virtual environment under `/opt/prod/snakewebcode/venv` and installs the PyMySQL
 dependency from `requirements.txt`; this requires package download access.
 
 Application code, scripts, and tests live in the
@@ -113,7 +113,7 @@ not. Upgrading reapplies the required SELECT grants to the existing reader.
 After configuring the service, run `sudo systemctl restart snake-web.service`
 and inspect `journalctl -u snake-web.service`. Missing configuration or publishing
 failures are logged and retried at the next half-hour boundary. Use
-`python -m snake_web.server --once` to publish immediately. If a publishing pass
+`python -m snakewebcode.server --once` to publish immediately. If a publishing pass
 runs across a scheduled boundary, the service waits for the next future boundary
 instead of starting overlapping or catch-up passes.
 
@@ -146,7 +146,7 @@ transaction, then queries the backup and publishes only to a temporary local
 remote. The September 14, 2026 Snake Lab backup contains 110 runs and a high
 score of 49. Adjust the expected score when testing another backup.
 
-For a configured foreground run, use `.venv/bin/python -m snake_web.server --once`.
+For a configured foreground run, use `.venv/bin/python -m snakewebcode.server --once`.
 It requires the `DB_*` values from the managed database file and the Git
 settings in its environment, performs an actual status commit and
 push, and exits nonzero on failure. Omitting `--once` runs the periodic service.

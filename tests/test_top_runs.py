@@ -2,8 +2,8 @@ import sqlite3
 import json
 import unittest
 
-from snake_web.activity.AppDb import AppDb
-from snake_web.activity.TopRuns import render_top_runs
+from snakewebcode.activity.AppDb import AppDb
+from snakewebcode.activity.TopRuns import render_top_runs
 from test_experiment_status import SNAPSHOT
 
 
