@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.4.0] - 2026-10-24 @ 12:01
+
 This release is named for the element **Sulfur**. Sulfur's distinctive yellow crystals often form around volcanic vents and hot springs.
 
 ### Added
