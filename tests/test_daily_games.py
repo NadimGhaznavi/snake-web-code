@@ -11,10 +11,10 @@ from uuid import UUID
 from PIL import Image
 import zmq
 
-from snake_web.activity.AppDb import AppDb
-from snake_web.activity.DailyGames import export_daily_games, render_daily_games
-from snake_web.interface.GitPublisher import GitPublisher
-from snake_web.interface.SnakeLab import SnakeLab, SnakeLabQueryError
+from snakewebcode.activity.AppDb import AppDb
+from snakewebcode.activity.DailyGames import export_daily_games, render_daily_games
+from snakewebcode.interface.GitPublisher import GitPublisher
+from snakewebcode.interface.SnakeLab import SnakeLab, SnakeLabQueryError
 
 
 def run(number, score):
@@ -165,7 +165,7 @@ class CaptureContractTests(unittest.TestCase):
                 snake.get_highscore_frames(run_id)
 
     def test_zmq_request_uses_versioned_envelope_and_checks_response(self):
-        with patch('snake_web.interface.SnakeLab.zmq.Context') as context:
+        with patch('snakewebcode.interface.SnakeLab.zmq.Context') as context:
             socket = context.return_value.__enter__.return_value.socket.return_value.__enter__.return_value
             socket.recv_json.side_effect = lambda: dict(
                 protocol_version=1, request_id=socket.send_json.call_args.args[0]['request_id'],

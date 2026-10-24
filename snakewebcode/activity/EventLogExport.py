@@ -6,9 +6,9 @@ import io
 import json
 import re
 
-from snake_web.activity.GoldenHistory import reasoning_content
-from snake_web.activity.SimulationBoard import board_svg
-from snake_web.constants.PublicEvents import EVENT_LABELS
+from snakewebcode.activity.GoldenHistory import reasoning_content
+from snakewebcode.activity.SimulationBoard import board_svg
+from snakewebcode.constants.PublicEvents import EVENT_LABELS
 
 EVENT_FIELDS = ('event_id', 'occurred_at', 'category', 'name', 'log_level',
                 'process_id', 'source_name', 'parameter', 'parent_event_id', 'ax3l_version', 'detail')

@@ -2,7 +2,7 @@
 # Remove installed daemon code while preserving the service account and data.
 set -euo pipefail
 
-readonly install_dir=/opt/prod/snake-web
+readonly install_dir=/opt/prod/snakewebcode
 readonly unit_path=/etc/systemd/system/snake-web.service
 
 fail() {
@@ -15,7 +15,7 @@ usage() {
 Usage: sudo $0
 
 Stop and disable snake-web.service, remove its unit, and remove
-/opt/prod/snake-web and all daemon code beneath it.
+/opt/prod/snakewebcode and all daemon code beneath it.
 Preserve the snake-web account and group, /var/lib/snake-web (including
 SSH credentials and the publishing clone), and the development checkout.
 Safe to rerun when the production directory has already been removed.

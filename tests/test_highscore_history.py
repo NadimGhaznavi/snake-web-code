@@ -2,8 +2,8 @@
 import unittest
 from unittest.mock import Mock
 
-from snake_web.activity.AppDb import AppDb
-from snake_web.activity.HighscoreHistory import append_history, read_history
+from snakewebcode.activity.AppDb import AppDb
+from snakewebcode.activity.HighscoreHistory import append_history, read_history
 
 
 class HistoryTests(unittest.TestCase):

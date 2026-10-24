@@ -5,12 +5,12 @@ import sqlite3
 import unittest
 from unittest.mock import Mock
 
-from snake_web.activity.AppDb import AppDb
-from snake_web.activity.EventLogExport import (
+from snakewebcode.activity.AppDb import AppDb
+from snakewebcode.activity.EventLogExport import (
     EVENT_FIELDS, SIMULATION_FIELDS, read_csv, export_event_log, sanitize_event, prompt_parts,
 )
-from snake_web.constants.PublicEvents import CONFIGURATION_FIELDS
-from snake_web.interface.GitPublisher import GitPublisher
+from snakewebcode.constants.PublicEvents import CONFIGURATION_FIELDS
+from snakewebcode.interface.GitPublisher import GitPublisher
 
 
 class EventLogTests(unittest.TestCase):

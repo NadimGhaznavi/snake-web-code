@@ -7,14 +7,14 @@ from pathlib import Path
 import socket
 from string import Template
 
-from snake_web.activity.EventLogExport import export_event_log
-from snake_web.activity.DailyGames import export_daily_games, render_daily_games
-from snake_web.activity.DailyProgress import export_daily_progress
-from snake_web.activity.GoldenHistory import append_golden_history, read_golden_history
-from snake_web.activity.HighscoreHistory import append_history, read_history
-from snake_web.activity.RunScoreHistory import append_scores
-from snake_web.activity.TopRuns import render_top_runs
-from snake_web.entity.ExperimentStatus import ExperimentStatus
+from snakewebcode.activity.EventLogExport import export_event_log
+from snakewebcode.activity.DailyGames import export_daily_games, render_daily_games
+from snakewebcode.activity.DailyProgress import export_daily_progress
+from snakewebcode.activity.GoldenHistory import append_golden_history, read_golden_history
+from snakewebcode.activity.HighscoreHistory import append_history, read_history
+from snakewebcode.activity.RunScoreHistory import append_scores
+from snakewebcode.activity.TopRuns import render_top_runs
+from snakewebcode.entity.ExperimentStatus import ExperimentStatus
 
 
 _TEMPLATE = Template(Path(__file__).with_name('homepage.html').read_text())

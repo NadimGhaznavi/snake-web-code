@@ -2,8 +2,8 @@
 import unittest
 from unittest.mock import Mock
 
-from snake_web.activity.AppDb import AppDb
-from snake_web.activity.RunScoreHistory import append_scores, read_scores
+from snakewebcode.activity.AppDb import AppDb
+from snakewebcode.activity.RunScoreHistory import append_scores, read_scores
 
 
 class RunScoreTests(unittest.TestCase):

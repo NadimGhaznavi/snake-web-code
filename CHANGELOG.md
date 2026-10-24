@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+This release is named for the element **Sulfur**. Sulfur's distinctive yellow crystals often form around volcanic vents and hot springs.
+
+### Added
+
+- Declare SnakeWebCode's classification, release codename, publishing directory,
+  local database references, and absence of network listeners for CMDB discovery.
+
+### Changed
+
+- Rename the Python package to `snakewebcode` and install under `/opt/prod/snakewebcode`
+  to follow CMDB's standard discovery convention. Preserve existing service,
+  configuration, credentials, and publishing data during upgrades.
+- Use the shared release script with interactive confirmation, release codename
+  updates from the supplied message, and atomic branch and tag publication.
+
 ## [4.3.1] - 2026-10-17 @ 01:06
 
 This release celebrates the Cree language. This is the **kēkā-mitātahtosāp** (19) release.
