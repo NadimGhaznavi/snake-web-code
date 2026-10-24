@@ -4,7 +4,7 @@ set -euo pipefail
 
 service_user=snake-web
 service_home=/var/lib/snake-web
-install_dir=/opt/prod/snake-web
+install_dir=/opt/prod/snakewebcode
 source_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 unit_path=/etc/systemd/system/snake-web.service
 config_dir=/etc/snake-web
@@ -21,7 +21,7 @@ usage() {
 Usage: sudo $0
 
 Create the snake-web system account with home /var/lib/snake-web and
-install Python daemon code in /opt/prod/snake-web, owned by root, and
+install Python daemon code in /opt/prod/snakewebcode, owned by root, and
 enable and start snake-web.service (restart it on reinstall).
 Safe to rerun with an existing compatible account and directories.
 Provisions a dedicated local MariaDB reader and /etc/snake-web/database.env.
@@ -45,51 +45,51 @@ done
 [[ -x /usr/bin/python3 ]] || fail 'Missing /usr/bin/python3.'
 [[ -d /run/systemd/system ]] || fail 'This installer requires a running systemd system.'
 code_files=(
-    snake_web/__init__.py
-    snake_web/server.py
-    snake_web/constants/DSnakeWeb.py
-    snake_web/activity/AppDb.py
-    snake_web/activity/PublishStatus.py
-    snake_web/activity/SimulationBoard.py
-    snake_web/activity/DailyGames.py
-    snake_web/activity/DailyProgress.py
-    snake_web/activity/SimulationAnimation.py
-    snake_web/activity/fonts/DejaVuSansMono.ttf
-    snake_web/activity/fonts/LICENSE.txt
-    snake_web/activity/reports/daily-games.js
-    snake_web/interface/SnakeLab.py
-    snake_web/constants/DSnakeLab.py
-    snake_web/activity/TopRuns.py
-    snake_web/activity/reports/top-100.html
-    snake_web/activity/reports/top-100.js
-    snake_web/activity/homepage.html
-    snake_web/activity/EventLogExport.py
-    snake_web/constants/PublicEvents.py
-    snake_web/activity/reports/event-log.html
-    snake_web/activity/reports/event-detail.html
-    snake_web/activity/reports/event-log.js
-    snake_web/activity/reports/report-csv.js
-    snake_web/activity/GoldenHistory.py
-    snake_web/activity/GoldenConfigurations.py
-    snake_web/constants/ReportLabels.py
-    snake_web/activity/reports/golden-configurations.html
-    snake_web/activity/reports/golden-detail.html
-    snake_web/activity/reports/golden-configurations.js
-    snake_web/activity/HighscoreHistory.py
-    snake_web/activity/RunScoreHistory.py
-    snake_web/activity/reports/score-distribution.html
-    snake_web/activity/reports/score-distribution.js
-    snake_web/activity/reports/experiment-highscores.html
-    snake_web/activity/reports/experiment-highscores.js
-    snake_web/entity/ExperimentStatus.py
-    snake_web/interface/DbMgr.py
-    snake_web/interface/GitPublisher.py
+    snakewebcode/__init__.py
+    snakewebcode/server.py
+    snakewebcode/constants/DSnakeWebCode.py
+    snakewebcode/activity/AppDb.py
+    snakewebcode/activity/PublishStatus.py
+    snakewebcode/activity/SimulationBoard.py
+    snakewebcode/activity/DailyGames.py
+    snakewebcode/activity/DailyProgress.py
+    snakewebcode/activity/SimulationAnimation.py
+    snakewebcode/activity/fonts/DejaVuSansMono.ttf
+    snakewebcode/activity/fonts/LICENSE.txt
+    snakewebcode/activity/reports/daily-games.js
+    snakewebcode/interface/SnakeLab.py
+    snakewebcode/constants/DSnakeLab.py
+    snakewebcode/activity/TopRuns.py
+    snakewebcode/activity/reports/top-100.html
+    snakewebcode/activity/reports/top-100.js
+    snakewebcode/activity/homepage.html
+    snakewebcode/activity/EventLogExport.py
+    snakewebcode/constants/PublicEvents.py
+    snakewebcode/activity/reports/event-log.html
+    snakewebcode/activity/reports/event-detail.html
+    snakewebcode/activity/reports/event-log.js
+    snakewebcode/activity/reports/report-csv.js
+    snakewebcode/activity/GoldenHistory.py
+    snakewebcode/activity/GoldenConfigurations.py
+    snakewebcode/constants/ReportLabels.py
+    snakewebcode/activity/reports/golden-configurations.html
+    snakewebcode/activity/reports/golden-detail.html
+    snakewebcode/activity/reports/golden-configurations.js
+    snakewebcode/activity/HighscoreHistory.py
+    snakewebcode/activity/RunScoreHistory.py
+    snakewebcode/activity/reports/score-distribution.html
+    snakewebcode/activity/reports/score-distribution.js
+    snakewebcode/activity/reports/experiment-highscores.html
+    snakewebcode/activity/reports/experiment-highscores.js
+    snakewebcode/entity/ExperimentStatus.py
+    snakewebcode/interface/DbMgr.py
+    snakewebcode/interface/GitPublisher.py
 )
 for source_file in "${code_files[@]}" requirements.txt scripts/provision-database.py systemd/snake-web.service systemd/snake-web.env; do
     [[ -f ${source_dir}/${source_file} ]] || fail "Missing source file: ${source_file}"
 done
 
-for directory in /etc "${config_dir}" /var/lib "${service_home}" /opt /opt/prod "${install_dir}" "${install_dir}/snake_web" "${install_dir}/snake_web/constants" "${install_dir}/snake_web/activity" "${install_dir}/snake_web/activity/reports" "${install_dir}/snake_web/entity" "${install_dir}/snake_web/interface" "${install_dir}/venv"; do
+for directory in /etc "${config_dir}" /var/lib "${service_home}" /opt /opt/prod "${install_dir}" "${install_dir}/snakewebcode" "${install_dir}/snakewebcode/constants" "${install_dir}/snakewebcode/activity" "${install_dir}/snakewebcode/activity/reports" "${install_dir}/snakewebcode/entity" "${install_dir}/snakewebcode/interface" "${install_dir}/venv"; do
     [[ ! -L ${directory} ]] || fail "Refusing symlink: ${directory}"
     [[ ! -e ${directory} || -d ${directory} ]] || fail "Not a directory: ${directory}"
 done

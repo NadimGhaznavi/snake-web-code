@@ -55,12 +55,12 @@ and services only for demonstrated requirements.
 | `README.md` | Project overview and development entry point |
 | `pages/` | Canonical development guidelines |
 | `docs/devops/` | Installation, publication, and maintenance guides |
-| `snake_web/server.py` | Application wiring, scheduling, and lifecycle |
-| `snake_web/entity/` | Data entities |
-| `snake_web/activity/` | Application queries, exports, rendering, and publishing operations |
-| `snake_web/activity/reports/` | Static report templates and browser scripts |
-| `snake_web/interface/` | Database, Snake Lab, filesystem, and Git boundaries |
-| `snake_web/constants/` | Version and shared definitions |
+| `snakewebcode/server.py` | Application wiring, scheduling, and lifecycle |
+| `snakewebcode/entity/` | Data entities |
+| `snakewebcode/activity/` | Application queries, exports, rendering, and publishing operations |
+| `snakewebcode/activity/reports/` | Static report templates and browser scripts |
+| `snakewebcode/interface/` | Database, Snake Lab, filesystem, and Git boundaries |
+| `snakewebcode/constants/` | Version and shared definitions |
 | `scripts/` | Installation, maintenance, and release tooling |
 | `systemd/` | Service unit and environment template |
 | `tests/` | Rendering, query, publication, and provisioning verification |
@@ -113,7 +113,7 @@ for the daily selection and cache contract.
 
 ## Installation and production
 
-Installation deploys code to `/opt/prod/snake-web` and runs `snake-web.service`
+Installation deploys code to `/opt/prod/snakewebcode` and runs `snake-web.service`
 as the `snake-web` account. Configuration lives in `/etc/snake-web`; persistent
 state, SSH credentials, and the default publishing checkout live under
 `/var/lib/snake-web`. Keep development, deployment, and publishing checkouts separate.
@@ -187,13 +187,17 @@ that could not be run, including optional database or browser verification.
 Record meaningful changes under `## [Unreleased]` in `CHANGELOG.md`, focusing on
 user-visible outcomes.
 
-`DSnakeWeb.VERSION` MUST remain a single-line literal string in
-`snake_web/constants/DSnakeWeb.py` for the current release script.
-`scripts/new-release.sh` takes a version, a release message, and an optional next
-feature branch. It runs from a clean, committed `feat/*` branch, merges through
-`dev` and `main`, updates the version and changelog timestamp, and publishes those
-branches and the annotated version tag to `origin`.
+`DSnakeWebCode.VERSION` and `DSnakeWebCode.CMDB_CODENAME` MUST remain single-line
+literal strings in `snakewebcode/constants/DSnakeWebCode.py`. Keep discovery
+declarations literal and install that file at
+`/opt/prod/snakewebcode/snakewebcode/constants/DSnakeWebCode.py`.
+See [CMDB discovery](../docs/devops/cmdb-discovery.md) for the application metadata.
 
-The current script pushes without an interactive confirmation. Verify repository,
-release details, and owner authorization before invoking it. Do not introduce
-codename or CMDB requirements that the project's release tooling does not implement.
+`scripts/new-release.sh` takes a version, a release message, and an optional next
+feature branch. It requires a clean, committed feature branch, fetches remote
+refs, and requests interactive confirmation before changing release files or
+branches. It merges through `dev` and `main`, updates the version, sets the
+codename to the supplied message, timestamps the changelog, and atomically pushes
+those branches and the annotated version tag to `origin`. The next feature branch
+is created locally. Verify repository, release details, and owner authorization
+before invoking it. See [releases](../docs/devops/releases.md).

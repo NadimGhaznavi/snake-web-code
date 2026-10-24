@@ -16,13 +16,13 @@ import unittest
 import pymysql
 from unittest.mock import Mock, patch
 
-from snake_web.activity.AppDb import AppDb
-from snake_web.activity.PublishStatus import PublishStatus, render_status
-from snake_web.activity.DailyProgress import export_daily_progress
-from snake_web.interface.DbMgr import DbMgr
-from snake_web.interface.GitPublisher import GitPublisher
-from snake_web.entity.ExperimentStatus import ExperimentStatus
-from snake_web import server
+from snakewebcode.activity.AppDb import AppDb
+from snakewebcode.activity.PublishStatus import PublishStatus, render_status
+from snakewebcode.activity.DailyProgress import export_daily_progress
+from snakewebcode.interface.DbMgr import DbMgr
+from snakewebcode.interface.GitPublisher import GitPublisher
+from snakewebcode.entity.ExperimentStatus import ExperimentStatus
+from snakewebcode import server
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -119,7 +119,7 @@ class PublishingTests(unittest.TestCase):
     def test_daily_gifs_share_commit_retry_and_reuse(self):
         from test_daily_games import run, frames
         self.appdb.get_daily_runs.return_value = [run(number, number) for number in range(10, 0, -1)]
-        with patch('snake_web.activity.DailyGames.SnakeLab') as snake:
+        with patch('snakewebcode.activity.DailyGames.SnakeLab') as snake:
             snake.return_value.get_highscore_frames.side_effect = lambda uuid: frames(int(uuid.replace('-', ''), 16))
             hook = self.remote / 'hooks/pre-receive'
             hook.write_text('#!/bin/sh\nexit 1\n')
@@ -199,7 +199,7 @@ class PublishingTests(unittest.TestCase):
         self.appdb.get_daily_progress_time.return_value = datetime(2026, 10, 11, 1)
         self.appdb.get_daily_progress_time.reset_mock()
         self.appdb.get_daily_configurations.reset_mock()
-        with patch('snake_web.activity.DailyGames.SnakeLab') as snake:
+        with patch('snakewebcode.activity.DailyGames.SnakeLab') as snake:
             snake.return_value.get_highscore_frames.return_value = frames(50)
             self.activity.run(collect_progress=False)
         self.assertIn('Simulation #2 - Highscore 50', self.remote_page())
@@ -282,7 +282,7 @@ class PublishingTests(unittest.TestCase):
         clock = Mock()
         clock.now.return_value.astimezone.return_value = datetime(
             2026, 9, 16, 15, 4, 5, tzinfo=timezone(timedelta(hours=-4), 'EDT'))
-        with patch('snake_web.activity.PublishStatus.datetime', clock):
+        with patch('snakewebcode.activity.PublishStatus.datetime', clock):
             self.activity.run()
             self.assertIn('Last Updated: <!-- last-updated -->2026-09-16 15:04:05 EDT (-0400)',
                           self.remote_page())
@@ -459,11 +459,11 @@ class PublishingTests(unittest.TestCase):
                     db.query('UPDATE simulation_runs SET high_score = 0 WHERE id = 1')
                 self.assertEqual(rejected.exception.args[0], 1792)
         self.assertEqual(score, int(os.environ.get("SNAKE_WEB_TEST_EXPECTED_SCORE", "49")))
-        result = subprocess.run([sys.executable, '-m', 'snake_web.server', '--once'],
+        result = subprocess.run([sys.executable, '-m', 'snakewebcode.server', '--once'],
                                 cwd=ROOT, env=env, capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(self.remote_page(), self.expected_page(status).strip())
-        result = subprocess.run([sys.executable, '-m', 'snake_web.server', '--once'],
+        result = subprocess.run([sys.executable, '-m', 'snakewebcode.server', '--once'],
                                 cwd=ROOT, env=env, capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn('unchanged', result.stderr)

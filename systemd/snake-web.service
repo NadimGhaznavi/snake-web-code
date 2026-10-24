@@ -7,14 +7,14 @@ Wants=network-online.target
 Type=simple
 User=snake-web
 Group=snake-web
-WorkingDirectory=/opt/prod/snake-web
+WorkingDirectory=/opt/prod/snakewebcode
 Environment=HOME=/var/lib/snake-web
 Environment=PYTHONUNBUFFERED=1
 Environment=PYTHONDONTWRITEBYTECODE=1
 EnvironmentFile=/etc/snake-web/snake-web.env
 EnvironmentFile=/etc/snake-web/database.env
 Environment=GIT_TERMINAL_PROMPT=0
-ExecStart=/opt/prod/snake-web/venv/bin/python -m snake_web.server
+ExecStart=/opt/prod/snakewebcode/venv/bin/python -m snakewebcode.server
 StateDirectory=snake-web
 StateDirectoryMode=0750
 RuntimeDirectory=snake-web

@@ -4,8 +4,8 @@ from pathlib import Path
 from html import escape
 from string import Template
 
-from snake_web.activity.SimulationBoard import board_svg
-from snake_web.activity.GoldenHistory import reasoning_content
+from snakewebcode.activity.SimulationBoard import board_svg
+from snakewebcode.activity.GoldenHistory import reasoning_content
 
 
 _TEMPLATE = Template(Path(__file__).with_name('reports').joinpath('top-100.html').read_text())

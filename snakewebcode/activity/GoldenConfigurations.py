@@ -7,7 +7,7 @@ PAIR_PARAMETERS = {
     "reward_pair": (("game", "rewards", "closer_to_food"),
                     ("game", "rewards", "further_from_food")),
 }
-from snake_web.constants.ReportLabels import FIELD_TO_LABEL_MAP
+from snakewebcode.constants.ReportLabels import FIELD_TO_LABEL_MAP
 
 
 def parameter_change(decision: str | None, parameter: str | None = None) -> str:

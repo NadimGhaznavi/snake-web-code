@@ -7,7 +7,7 @@ usage() {
 Usage: sudo $0
 
 Generate and push current website content immediately, using the installed
-code in /opt/prod/snake-web and configuration in /etc/snake-web.
+code in /opt/prod/snakewebcode and configuration in /etc/snake-web.
 Runs as snake-web, displays publishing output, and returns its exit status.
 Leaves the scheduled service running. Unchanged content creates no new commit.
 If another publication is in progress, wait for it to finish and rerun.
@@ -29,7 +29,7 @@ fi
 exec systemd-run --wait --pipe --collect \
     --description='Snake Web manual publication' \
     --uid=snake-web --gid=snake-web \
-    --working-directory=/opt/prod/snake-web \
+    --working-directory=/opt/prod/snakewebcode \
     --setenv=HOME=/var/lib/snake-web \
     --setenv=PYTHONUNBUFFERED=1 \
     --setenv=PYTHONDONTWRITEBYTECODE=1 \
@@ -41,4 +41,4 @@ exec systemd-run --wait --pipe --collect \
     --property=ProtectHome=true \
     --property=ProtectSystem=strict \
     --property=ReadWritePaths=/var/lib/snake-web \
-    /opt/prod/snake-web/venv/bin/python -m snake_web.server --once
+    /opt/prod/snakewebcode/venv/bin/python -m snakewebcode.server --once

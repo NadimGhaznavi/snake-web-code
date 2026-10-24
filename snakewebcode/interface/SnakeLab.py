@@ -5,7 +5,7 @@ from uuid import UUID, uuid4
 
 import zmq
 
-from snake_web.constants.DSnakeLab import DSnakeLab
+from snakewebcode.constants.DSnakeLab import DSnakeLab
 
 
 class SnakeLabQueryError(RuntimeError):

@@ -7,7 +7,7 @@ usage() {
 Usage: $0
 
 Run as root after pulling the desired release into this checkout.
-Deploy the Python code to /opt/prod/snake-web, update the systemd unit,
+Deploy the Python code to /opt/prod/snakewebcode, update the systemd unit,
 reload systemd, and enable and restart snake-web.service.
 
 Also supports the first deployment. Preserves /var/lib/snake-web,

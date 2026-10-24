@@ -10,9 +10,9 @@ from unittest.mock import Mock, patch
 
 from PIL import Image, ImageDraw
 
-from snake_web.activity.AppDb import AppDb
-from snake_web.activity.DailyProgress import export_daily_progress, read_progress, render_progress
-from snake_web.interface.GitPublisher import GitPublisher
+from snakewebcode.activity.AppDb import AppDb
+from snakewebcode.activity.DailyProgress import export_daily_progress, read_progress, render_progress
+from snakewebcode.interface.GitPublisher import GitPublisher
 
 
 class DailyProgressTests(unittest.TestCase):
@@ -39,7 +39,7 @@ class DailyProgressTests(unittest.TestCase):
         self.assertIn('?v=', html)
         data = self.files[GitPublisher.PROGRESS_GIF_PATH]
         self.app.get_daily_configurations.reset_mock()
-        with patch('snake_web.activity.DailyProgress.render_progress', wraps=render_progress) as render:
+        with patch('snakewebcode.activity.DailyProgress.render_progress', wraps=render_progress) as render:
             repeated, state = self.export('2026-10-11T12:45:00', [dict(id=3, high_score=41)])
             render.assert_not_called()
         self.app.get_daily_configurations.assert_not_called()
@@ -103,7 +103,7 @@ class DailyProgressTests(unittest.TestCase):
     def test_complete_day_has_48_frames_and_99_second_loop(self):
         start = datetime(2026, 10, 11)
         # Exercise all slots without rendering every intermediate GIF again.
-        with patch('snake_web.activity.DailyProgress.render_progress', return_value=b'GIF89a'):
+        with patch('snakewebcode.activity.DailyProgress.render_progress', return_value=b'GIF89a'):
             for number in range(1, 48):
                 self.export((start + timedelta(minutes=30 * number)).isoformat(),
                             [dict(id=number, high_score=number)])
@@ -167,7 +167,7 @@ class DailyProgressTests(unittest.TestCase):
         state['renderer'] = 0
         self.files[GitPublisher.PROGRESS_PATH] = json.dumps(state)
         self.app.get_daily_configurations.reset_mock()
-        with patch('snake_web.activity.DailyProgress.render_progress', wraps=render_progress) as render:
+        with patch('snakewebcode.activity.DailyProgress.render_progress', wraps=render_progress) as render:
             self.export('2026-10-11T12:35:00')
             render.assert_called_once()
         self.app.get_daily_configurations.assert_not_called()
@@ -204,4 +204,4 @@ class DailyProgressTests(unittest.TestCase):
 class PackagingTests(unittest.TestCase):
     def test_installer_includes_renderer(self):
         root = Path(__file__).resolve().parents[1]
-        self.assertIn('snake_web/activity/DailyProgress.py', (root / 'scripts/install.sh').read_text())
+        self.assertIn('snakewebcode/activity/DailyProgress.py', (root / 'scripts/install.sh').read_text())

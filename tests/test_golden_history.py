@@ -3,9 +3,9 @@ import json
 import sqlite3
 import unittest
 
-from snake_web.activity.AppDb import AppDb
-from snake_web.activity.GoldenConfigurations import parameter_change
-from snake_web.activity.GoldenHistory import reasoning_content, append_golden_history, read_golden_history
+from snakewebcode.activity.AppDb import AppDb
+from snakewebcode.activity.GoldenConfigurations import parameter_change
+from snakewebcode.activity.GoldenHistory import reasoning_content, append_golden_history, read_golden_history
 
 class GoldenHistoryTests(unittest.TestCase):
     def test_baselines_retries_and_unrelated_conversations(self):

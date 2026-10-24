@@ -4,8 +4,8 @@ import csv
 import io
 import json
 
-from snake_web.activity.GoldenConfigurations import parameter_change
-from snake_web.constants.ReportLabels import FIELD_TO_LABEL_MAP
+from snakewebcode.activity.GoldenConfigurations import parameter_change
+from snakewebcode.constants.ReportLabels import FIELD_TO_LABEL_MAP
 
 FIELDS = ('event_id', 'occurred_at', 'run_id', 'high_score', 'parameter', 'change', 'reasoning')
 

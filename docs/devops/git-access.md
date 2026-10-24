@@ -9,7 +9,7 @@ development checkout at `/opt/dev/snake-web` separate so publishing cannot
 accidentally commit development work or change a developer's active branch.
 The examples below assume an account and group named `snake-web`, a home at
 `/var/lib/snake-web`, and a production clone at `/var/lib/snake-web/site`.
-The daemon code lives separately in `/opt/prod/snake-web`, owned by `root:root`
+The daemon code lives separately in `/opt/prod/snakewebcode`, owned by `root:root`
 with mode `0755`, so the service account can read and execute it.
 
 GitHub credential setup is separate from installation. Run Git and key
@@ -57,7 +57,7 @@ workflow.
 Set `GIT_SSH_COMMAND` and `PUBLISH_CHECKOUT` in `/etc/snake-web/snake-web.env` as shown in
 [Install Snake Web](install.md). The installed unit
 sets the service account, home, and `GIT_TERMINAL_PROMPT=0`, and reads that file.
-Its working directory is `/opt/prod/snake-web`; the publisher runs Git in the
+Its working directory is `/opt/prod/snakewebcode`; the publisher runs Git in the
 configured publishing clone.
 
 `StateDirectory=snake-web` makes `/var/lib/snake-web` writable within the service's

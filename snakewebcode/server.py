@@ -7,10 +7,10 @@ import os
 import signal
 import threading
 
-from snake_web.activity.AppDb import AppDb
-from snake_web.activity.PublishStatus import PublishStatus
-from snake_web.interface.DbMgr import DbMgr
-from snake_web.interface.GitPublisher import GitPublisher
+from snakewebcode.activity.AppDb import AppDb
+from snakewebcode.activity.PublishStatus import PublishStatus
+from snakewebcode.interface.DbMgr import DbMgr
+from snakewebcode.interface.GitPublisher import GitPublisher
 
 
 def publish_once(*, collect_progress=True) -> str:
