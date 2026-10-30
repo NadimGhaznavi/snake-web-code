@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.0.5] - 2026-10-30 @ 05:22
+
 This release is named for the element **Protactinium (Pa)**. Protactinium is rare, 
 radioactive, and named because it decays into actinium.
 
