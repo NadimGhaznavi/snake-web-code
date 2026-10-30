@@ -45,6 +45,11 @@ already have changed; inspect the failure before retrying.
 
 ## Configure publication
 
+The installer also creates non-secret
+`/opt/prod/snakewebcode/conf/snakewebcode.json` from the declared Caddy listener
+defaults, validates existing settings before service changes, and preserves them
+on reinstall or upgrade. See [network settings](neuromancer-deployment.md#network-settings).
+
 ```ini
 PUBLISH_DIRECTORY=/var/lib/snake-web/public
 SNAKE_LAB_ENDPOINT=tcp://127.0.0.1:41970

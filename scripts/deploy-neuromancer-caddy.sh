@@ -3,16 +3,27 @@
 set -euo pipefail
 
 usage() {
-    printf 'Usage: sudo scripts/deploy-neuromancer-caddy.sh\nInstall Caddy and the Snake Web LAN site on neuromancer. Requires published artifacts.\n'
+    printf 'Usage: sudo scripts/deploy-neuromancer-caddy.sh [--reload-only]\nInstall Caddy and the Snake Web LAN site on neuromancer. Requires published artifacts.\nUse --reload-only to apply network settings without installing packages.\n'
 }
 if [[ $# == 1 && ( $1 == --help || $1 == -h ) ]]; then
     usage
     exit 0
 fi
+reload_only=false
+if [[ $# == 1 && $1 == --reload-only ]]; then
+    reload_only=true
+    shift
+fi
 [[ $# == 0 && ${EUID} == 0 ]] || { usage >&2; exit 1; }
 [[ $(hostname -s) == neuromancer ]] || { printf 'Run this script on neuromancer.\n' >&2; exit 1; }
 umask 022
-for command in apt-get python3 runuser systemctl timeout; do
+commands=(python3 runuser systemctl timeout)
+if ${reload_only}; then
+    commands+=(caddy getfacl setfacl curl)
+else
+    commands+=(apt-get)
+fi
+for command in "${commands[@]}"; do
     command -v "${command}" >/dev/null || { printf 'Missing command: %s\n' "${command}" >&2; exit 1; }
 done
 source_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
@@ -24,10 +35,16 @@ systemctl is-active --quiet snake-web.service || {
     printf 'snake-web.service must already be running.\n' >&2; exit 1;
 }
 
-# Refuse a different publication root rather than serving stale files or changing settings.
-python3 - <<'PY'
+network_config=/opt/prod/snakewebcode/conf/snakewebcode.json
+# Validate configuration and resolve one binding for both the site and HTTP checks.
+network_settings=$(python3 -B - "${source_dir}" "${network_config}" <<'PY'
 from pathlib import Path
 import shlex
+import sys
+
+sys.path.insert(0, sys.argv[1])
+from snakewebcode.interface.Configuration import Configuration
+from snakewebcode.interface.Network import Network
 
 for name in ('/etc/caddy', '/var/lib/snake-web', '/var/lib/snake-web/public'):
     path = Path(name)
@@ -47,19 +64,28 @@ for name in ('live.json', 'score-distribution.gif'):
     path = Path('/var/lib/snake-web/public') / name
     if not path.is_file() or path.is_symlink():
         raise RuntimeError(f'Publish artifacts before configuring Caddy: {path}')
+settings = Path(sys.argv[2])
+Configuration.install(settings)
+interface, port = Network.binding('http', settings)
+destination, _ = Network.destination('http', settings)
+print(interface, port, destination)
 PY
+)
+read -r bind_interface bind_port probe_interface <<< "${network_settings}"
 
 backup_dir=$(mktemp -d /var/backups/snake-web-caddy.XXXXXX)
 printf 'Configuration backup: %s\n' "${backup_dir}"
 trap 'printf "Deployment incomplete; inspect the error and backups in %s. Packages and ACL changes may remain applied.\n" "${backup_dir}" >&2' ERR
-timeout 300 apt-get update
-timeout 600 env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends caddy acl curl
+if ! ${reload_only}; then
+    timeout 300 apt-get update
+    timeout 600 env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends caddy acl curl
+fi
 getfacl -p /var/lib/snake-web > "${backup_dir}/service-home.acl"
 setfacl -m u:caddy:--x /var/lib/snake-web
 runuser -u caddy -- test -r /var/lib/snake-web/public/live.json
 runuser -u caddy -- test -r /var/lib/snake-web/public/score-distribution.gif
 
-python3 - "${source_dir}" "${backup_dir}" <<'PY'
+python3 - "${source_dir}" "${backup_dir}" "${bind_interface}" "${bind_port}" <<'PY'
 from pathlib import Path
 import os
 import shutil
@@ -67,7 +93,8 @@ import subprocess
 import sys
 from tempfile import NamedTemporaryFile
 
-source, backup = map(Path, sys.argv[1:])
+source, backup = map(Path, sys.argv[1:3])
+interface, port = sys.argv[3:5]
 config = Path('/etc/caddy/Caddyfile')
 site = Path('/etc/caddy/snake-web.caddy')
 original = config.read_bytes()
@@ -76,6 +103,7 @@ shutil.copy2(config, backup / 'Caddyfile')
 if previous_site is not None:
     shutil.copy2(site, backup / 'snake-web.caddy')
 rendered = (source / 'systemd/Caddyfile.snake-neuromancer').read_text()
+rendered = rendered.replace('__HTTP_INTERFACE__', interface).replace('__HTTP_PORT__', port)
 directive = f'import {site}'
 base = '\n'.join(line for line in original.decode().splitlines() if line.strip() != directive)
 with NamedTemporaryFile(mode='w', prefix='.snake-web-', suffix='.Caddyfile', dir=config.parent) as candidate:
@@ -128,8 +156,8 @@ timeout 60 systemctl enable caddy.service
 systemctl is-active --quiet caddy.service
 for artifact in live.json score-distribution.gif; do
     curl --fail --silent --show-error --head --connect-timeout 5 --max-time 15 \
-        "http://192.168.0.106:8080/${artifact}"
+        "http://${probe_interface}:${bind_port}/${artifact}"
 done
 printf 'Snake Web LAN server configured. Backup: %s\n' "${backup_dir}"
-printf 'Verify from wintermute: curl -i --max-time 15 http://192.168.0.106:8080/live.json\n'
+printf "Backend binding: %s:%s; keep wintermute's upstream in sync.\n" "${bind_interface}" "${bind_port}"
 printf 'Then verify HTTPS: curl -I --max-time 15 https://snake.osoyalce.com/score-distribution.gif\n'

@@ -19,7 +19,7 @@ checkouts and the separate `snake-web` website repository are not discovery targ
 | `CMDB_CODENAME` | Release message, maintained by the release script |
 | `CMDB_COMPONENTS` | `Public Artifacts` at `/var/lib/snake-web/public` |
 | `CMDB_DATABASES` | `Snake Lab` → `snakelab` |
-| `CMDB_NETWORK` | Empty tuple; the publisher opens no listeners |
+| `CMDB_NETWORK` | `http` → `192.168.0.106:8080`, the managed Caddy backend |
 
 The filesystem component contains the public GIFs and live metadata. Its literal
 path must agree with `PUBLISH_DIRECTORY`; discovery does not read environment
@@ -38,7 +38,17 @@ the default local MariaDB socket. It does not create databases or alter Snake We
 read-only grants. The Snake Lab ZMQ endpoint and MariaDB connection
 are outbound dependencies and are not network listeners.
 
+The network declaration includes the Caddy listener managed by Snake Web, even
+though the Python publisher opens no listener. It supplies defaults for generated
+Caddy configuration and deployment HTTP checks. Production overrides live in
+`/opt/prod/snakewebcode/conf/snakewebcode.json`; see
+[network settings](neuromancer-deployment.md#network-settings).
+CMDB currently inventories the literal defaults, without reading JSON overrides
+or probing live sockets. Verify the effective binding separately after deployment.
+Wintermute's public HTTPS listener belongs to its own host configuration.
+
 Use **Re-Scan Applications** on the inventoried host. Verify the version,
 classification, codename, public directory, and the Snake Lab database reference.
-Expect no listener rows for SnakeWebCode. A missing file, unreadable file, or invalid
+Expect a SnakeWebCode `http` listener with port `8080` in Network's Ports report
+on neuromancer. A missing file, unreadable file, or invalid
 version prevents detection; check the installation path and agent access first.
