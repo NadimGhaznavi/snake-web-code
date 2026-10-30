@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install and start the status publishing service.
+# Install and start the static artifact publishing service.
 set -euo pipefail
 
 service_user=snake-web
@@ -27,7 +27,8 @@ Safe to rerun with an existing compatible account and directories.
 Provisions a dedicated local MariaDB reader and /etc/snake-web/database.env.
 Creates /etc/snake-web/snake-web.env; preserves existing settings on reinstall.
 Requires local MariaDB root socket access and the existing Snake Lab schema.
-Does not configure GitHub credentials. Requires Python 3 with venv support, Git, systemd, and package download access.
+Requires Python 3 with venv support, systemd, and package download access.
+Caddy setup is separate; see docs/devops/static-publishing.md.
 EOF
 }
 
@@ -38,7 +39,7 @@ fi
 [[ $# == 0 ]] || { usage >&2; exit 2; }
 [[ ${EUID} == 0 ]] || fail 'Run this installer as root.'
 
-for command in getent groupadd useradd usermod install id systemctl git mariadb; do
+for command in getent groupadd useradd usermod install id systemctl mariadb; do
     command -v "${command}" >/dev/null || fail "Required command not found: ${command}"
 done
 [[ -x /bin/bash ]] || fail 'Missing /bin/bash.'
@@ -50,6 +51,8 @@ code_files=(
     snakewebcode/constants/DSnakeWebCode.py
     snakewebcode/activity/AppDb.py
     snakewebcode/activity/PublishStatus.py
+    snakewebcode/activity/PublishLive.py
+    snakewebcode/activity/ScoreDistribution.py
     snakewebcode/activity/SimulationBoard.py
     snakewebcode/activity/DailyGames.py
     snakewebcode/activity/DailyProgress.py
@@ -84,6 +87,8 @@ code_files=(
     snakewebcode/entity/ExperimentStatus.py
     snakewebcode/interface/DbMgr.py
     snakewebcode/interface/GitPublisher.py
+    snakewebcode/interface/StaticPublisher.py
+    snakewebcode/interface/GIFAnimation.py
 )
 for source_file in "${code_files[@]}" requirements.txt scripts/provision-database.py systemd/snake-web.service systemd/snake-web.env; do
     [[ -f ${source_dir}/${source_file} ]] || fail "Missing source file: ${source_file}"
@@ -152,5 +157,5 @@ systemctl is-active --quiet snake-web.service
 
 printf 'Service account ready: %s (home: %s)\n' "${service_user}" "${service_home}"
 printf 'Daemon code directory ready: %s (root:root, 0755)\n' "${install_dir}"
-printf 'Publishing configuration ready: %s (review Git settings and complete SSH setup)\n' "${environment_file}"
+printf 'Publishing configuration ready: %s (review the public directory and Caddy setup)\n' "${environment_file}"
 printf 'snake-web.service enabled and started.\n'

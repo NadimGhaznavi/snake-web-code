@@ -1,127 +1,70 @@
 # Install Snake Web
 
-Snake Web reads Snake Lab simulations and Ax3l experiment events, generates
-`index.md` at the root of the dedicated publishing clone, and
-commits and pushes the page when its content changes. It publishes on the hour
-and half hour (`:00` and `:30`) in the server's local timezone, waiting for the
-next boundary on startup without polling the database in between. Each pass
-pushes when the generated content changes or a previous publication
-commit still needs to be pushed. It opens no listening ports.
+Snake Web reads Snake Lab results and captured games and writes static artifacts
+for Caddy. The project owner handles production rollout.
 
-The host needs Python 3.10 or newer with `venv` support, Git, and systemd.
-On Debian, install `python3-venv`, `git`, and `mariadb-client` first. MariaDB
-must already be running locally with the Snake Lab schema (including
-`simulation_runs.high_score_snapshot` and the v2 `configurations` table) and the `ax3l.events` and
-`ax3l.event_messages`, and `ax3l.experiment_highscores` tables installed, and root
-must be able to administer it through its Unix socket without a password. The installer creates a
-virtual environment under `/opt/prod/snakewebcode/venv` and installs the PyMySQL
-dependency from `requirements.txt`; this requires package download access.
+## Prerequisites
 
-Application code, scripts, and tests live in the
-[snake-web-code repository](https://github.com/NadimGhaznavi/snake-web-code).
-Run the installer from the root of that checkout:
+Use Python 3 with venv support, systemd, the MariaDB client, and package download
+access. Install and configure Snake Lab and Ax3l first. The existing reader
+provisioner verifies the Snake Lab simulation, episode, and configuration tables
+and Ax3l event, message, and high-score tables; it never creates source tables.
+The new publication path reads only `snakelab.simulation_runs` and the Snake Lab
+capture service. Database access remains read-only.
+
+Confirm the intended production host and source before installation. Use restored,
+isolated data for development; do not point verification at live experiments.
+
+## Install
+
+From a separate deployment checkout of `snake-web-code`, run as root:
 
 ```sh
-sudo scripts/install.sh
+scripts/install.sh
 systemctl status snake-web.service
 journalctl -u snake-web.service
 ```
 
-It creates the `snake-web` system account with a `/bin/bash` shell, prepares its
-home with mode `0750`, and creates the root-owned daemon code directory. On
-reinstall, it checks the existing account's home, shell, and primary group and
-preserves account data. Existing accounts using `/usr/sbin/nologin` are migrated
-to `/bin/bash`. It copies daemon code and installs, enables, and starts
-`snake-web.service`, restarting it on reinstall. It provisions the dedicated
-Snake Web database reader; GitHub credential setup remains separate.
+The installer creates the `snake-web` account with home `/var/lib/snake-web` and
+shell `/bin/bash`, installs code and dependencies at `/opt/prod/snakewebcode`,
+provisions a dedicated local MariaDB reader, and enables and starts the service.
+Reinstallation restarts it. Code is owned by root; the service runs as `snake-web`.
+Upgrades preserve configuration, credentials, and publication data.
 
-The service starts at boot.
+Root-only configuration lives under `/etc/snake-web` (directory mode `0700`):
 
-## Production configuration
+- `database.env`: managed reader credentials, mode `0600`. Provisioning reuses the
+  saved password and repairs only the dedicated reader's SELECT grants.
+- `snake-web.env`: publication settings, mode `0600`, preserved on upgrade.
 
-Install and upgrade automatically create Snake Web's own MariaDB account,
-`snake_web_reader@localhost`, with a generated password and only `SELECT` on
-`snakelab.simulation_runs`, `snakelab.simulation_episodes`, `snakelab.configurations`, `ax3l.events`, `ax3l.event_messages`, and
-`ax3l.experiment_highscores`. They discover the local MariaDB socket using the
-`mariadb` client and perform provisioning with local root access. They never
-reuse or modify the Snake Lab or Ax3l application accounts and never create or
-migrate the source database schema.
+The existing provisioner grants SELECT on `snakelab.simulation_runs`,
+`snakelab.simulation_episodes`, `snakelab.configurations`, `ax3l.events`,
+`ax3l.event_messages`, and `ax3l.experiment_highscores`. It does not alter source
+schemas or application accounts. If provisioning fails, code may already have
+been copied; inspect the failure before retrying.
 
-Credentials are stored at **`/etc/snake-web/database.env`**, owned by `root:root`
-with mode `0600` in `/etc/snake-web/` (created with mode `0700`). The file contains `DB_HOST`, `DB_SOCKET`, `DB_NAME`, `DB_USER`, and
-`DB_PASSWORD`; systemd loads it for the service, so the service account does not
-need direct read access. The DAL also uses a read-only transaction.
-
-For existing installations, install and upgrade copy a validated Snake Web-managed
-`/etc/snake-lab/database.env` into the new location when the new file is absent,
-preserving the password. The old file is left in place; the service uses the new
-file. Unrelated or invalid legacy files are rejected without modification.
-
-Upgrades preserve the generated password and reapply the dedicated account's
-SELECT-only privileges. A missing account can be recreated from its saved
-credentials. If the environment file belongs to another application, or the
-reader account exists without a Snake Web-managed credential file, provisioning
-stops without taking it over. Keep this file when moving or restoring the
-service. A socket-path mismatch also stops provisioning for inspection.
-
-The installer creates `/etc/snake-web/snake-web.env`, owned by `root:root` with
-mode `0600`, using the following defaults. Edit it as root for your publishing
-setup. Reinstall and upgrade preserve the existing file. If only the former
-`/etc/snake-web.env` exists, its settings are copied to the new location and the
-old file is left in place.
-
+## Configure publication
 
 ```ini
-PUBLISH_CHECKOUT=/var/lib/snake-web/site
-PUBLISH_BRANCH=main
-GIT_SSH_COMMAND="ssh -i /var/lib/snake-web/.ssh/id_ed25519 -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=/var/lib/snake-web/.ssh/known_hosts"
+PUBLISH_DIRECTORY=/var/lib/snake-web/public
+SNAKE_LAB_ENDPOINT=tcp://127.0.0.1:41970
 ```
 
-Remove any old `DB_*` entries from `/etc/snake-web/snake-web.env`; the managed database
-file is loaded afterward and supplies the database configuration. Both files
-are preserved during upgrades and uninstallation. Uninstallation also preserves
-the reader account and grants.
+The ZMQ endpoint is optional when using the default. Prepare the one-time website
+change, Caddy site block, and filesystem permissions using
+[static publishing](static-publishing.md). Caddy configuration and production
+reloads are separate from installation. No Git checkout or GitHub credentials
+are required by the publisher.
 
-Set up the dedicated clone and SSH credentials as described in
-[Git Access](git-access.md). The configured branch must
-already contain `index.md` at its root (normally `/var/lib/snake-web/site/index.md`)
-as a tracked file. Its existing contents may be empty or arbitrary: the daemon
-replaces the complete page with generated Jekyll front matter and a responsive
-Current Experiment panel. The panel shows the daemon host name, all-time high
-score, current golden configuration score, simulation count, completed experiment
-cycles, Experiment Highscores, Score Distribution Histogram, and Golden Configurations links, and the
-current golden configuration’s saved board as an inline SVG. The daemon also
-publishes the reports’ HTML, JavaScript, and incremental CSV files.
-Golden history includes only displayed metadata, formatted changes, and extracted
-LLM reasoning; response envelopes and tool payloads stay in the source database.
-Histogram CSV records are score observations: subsequent rows for the same run
-update its score. The browser counts each run once using its latest observation.
+The systemd service can write under `/var/lib/snake-web`. Custom locations need
+a `ReadWritePaths` override and a corresponding adjustment to manual publication.
+After configuration changes, restart the service and inspect its log. Scheduled
+publication runs at the next hour or half hour. Use
+[Publish immediately](push-now.md) for an immediate pass.
 
-All-time high score and simulation count cover every `simulation_runs` row.
-Games Played counts every `simulation_episodes` row; Moves Made sums their
-`steps`, with zero shown when no episodes exist. Both totals use comma formatting
-and update on the normal publication cycle. Existing installations must run the
-upgrade script to grant the reader SELECT access to `simulation_episodes`.
-The current score and snapshot come from the run referenced by the latest
-`golden_config_created` event, matching the report server. Cycles count completed
-ordered round-robin passes from Ax3l checkpoints and comparisons, ignoring
-duplicate comparisons and incomplete passes. Missing current scores display
-`—`; missing or invalid boards display an explanatory message. The page is
-published when any displayed content changes, even if the all-time score does
-not. Upgrading reapplies the required SELECT grants to the existing reader.
+## Development verification
 
-After configuring the service, run `sudo systemctl restart snake-web.service`
-and inspect `journalctl -u snake-web.service`. Missing configuration or publishing
-failures are logged and retried at the next half-hour boundary. Use
-`python -m snakewebcode.server --once` to publish immediately. If a publishing pass
-runs across a scheduled boundary, the service waits for the next future boundary
-instead of starting overlapping or catch-up passes.
-
-## DEV validation on Sally
-
-Production is a separate host running the live Ax3l and Snake Lab systems.
-Use restored backups and temporary Git repositories for DEV validation.
-Run the following commands from the `snake-web-code` checkout.
+From the development checkout:
 
 ```sh
 python3 -m venv .venv
@@ -129,39 +72,10 @@ python3 -m venv .venv
 .venv/bin/python -m unittest discover -s tests -v
 ```
 
-The Git tests create temporary repositories and local bare remotes. To also
-exercise the real DAL and one-shot command, restore the supplied Snake Lab dump
-into an isolated MariaDB instance, including the Snake Lab snapshot column
-and Ax3l event tables, then run:
-
-```sh
-SNAKE_WEB_TEST_DB_SOCKET=/tmp/snake-web-slice-db.sock \
-  SNAKE_WEB_TEST_EXPECTED_SCORE=49 \
-  .venv/bin/python -m unittest discover -s tests -v
-```
-
-This optional test expects the isolated instance to allow local `root` access
-without a password. It verifies that a write is rejected by the read-only
-transaction, then queries the backup and publishes only to a temporary local
-remote. The September 14, 2026 Snake Lab backup contains 110 runs and a high
-score of 49. Adjust the expected score when testing another backup.
-
-For a configured foreground run, use `.venv/bin/python -m snakewebcode.server --once`.
-It requires the `DB_*` values from the managed database file and the Git
-settings in its environment, performs an actual status commit and
-push, and exits nonzero on failure. Omitting `--once` runs the periodic service.
-A missing score preserves the existing page; zero is a valid score.
-
-To test provisioning itself, add
-`SNAKE_WEB_PROVISION_TEST_SOCKET=/tmp/snake-web-slice-db.sock` to the test command.
-Use only the isolated test instance: these tests create and remove the
-`snake_web_reader` account there and verify that its access is restricted. They
-write credential files only in temporary directories. They refuse to start if
-that instance already contains a `snake_web_reader` account.
-
-The Event Log additionally publishes sanitized event history and a versioned
-export cursor. Its simulation/configuration detail view requires the added
-`snakelab.configurations` SELECT grant, applied by installation and upgrade.
-Prompt content and selected response reasoning are public; response envelopes,
-choices, assistant content, and tool-call arguments are excluded before export.
-The CSV history and cursor must be kept together when restoring the site checkout.
+Tests use temporary files, disposable Git repositories for retained legacy
+helpers, and simulated system services. Optional database tests require an
+isolated MariaDB instance under a `/tmp/snake-web-*` socket; set
+`SNAKE_WEB_TEST_DB_SOCKET` to enable them. Reader-provisioning tests additionally
+require `SNAKE_WEB_PROVISION_TEST_SOCKET`. Never use production databases for these
+tests. A foreground `python -m snakewebcode.server --once` uses the configured
+source and writes real artifacts, so use a temporary `PUBLISH_DIRECTORY` in DEV.

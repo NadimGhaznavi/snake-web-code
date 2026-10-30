@@ -1,18 +1,17 @@
 # Publish immediately
 
-Run from the `snake-web-code` checkout to publish immediately using the
-installed code and service credentials:
+From the `snake-web-code` checkout:
 
 ```sh
 sudo scripts/push-now.sh
 ```
 
-The script displays the result and returns a nonzero exit status on failure.
-It leaves scheduled publishing running and creates no commit for unchanged
-content. If a scheduled publication is already in progress, rerun after it
-finishes. [Upgrade first](upgrade.md) if you want to publish changes from this
-checkout.
+The script runs the installed code as `snake-web`, using configuration from
+`/etc/snake-web`, and returns its exit status. It refreshes today's top five games,
+the whole-experiment score distribution, and `live.json` in the public directory.
+It does not commit or push anything. Unchanged artifacts retain their saved bytes
+and update time. Scheduled publication remains running; if another pass holds the
+lock, rerun after it finishes.
 
-Manual publication does not collect daily chart observations. The chart retains
-its last scheduled animation, while game rankings and other reports refresh.
-The next scheduled half-hour pass collects the next chart frame.
+[Upgrade first](upgrade.md) to publish using changes from this checkout. See
+[static publishing](static-publishing.md) for Caddy setup and verification.

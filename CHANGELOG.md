@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Attach the pinned BMForge GIF animation skill and use its application-owned
+  Pillow 12.3.0 encoder for Ax3l-style game and histogram frames.
+- Publish today's top five captured games and an Ax3l-compatible animated score
+  histogram as local static files served by Caddy, without routine Git commits
+  or pushes. Reuse unchanged GIFs and publish live update metadata.
+- Simplify the website to Ax3l Live, its update time, wrapping game navigation,
+  and the score distribution. Disable caching of the live artifacts through Caddy.
+
 ## [4.4.0] - 2026-10-24 @ 12:01
 
 This release is named for the element **Sulfur**. Sulfur's distinctive yellow crystals often form around volcanic vents and hot springs.

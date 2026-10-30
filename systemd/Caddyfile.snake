@@ -1,0 +1,12 @@
+snake.osoyalce.com {
+	@artifacts path /game-one.gif /game-two.gif /game-three.gif /game-four.gif /game-five.gif /score-distribution.gif /live.json
+	handle @artifacts {
+		root * /var/lib/snake-web/public
+		header {
+			Cache-Control "no-store"
+			Access-Control-Allow-Origin "https://snakeweb.osoyalce.com"
+		}
+		file_server
+	}
+	respond 404
+}

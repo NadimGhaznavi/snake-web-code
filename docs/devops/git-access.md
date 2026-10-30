@@ -1,4 +1,8 @@
-# Git Access
+# Legacy Git publication
+
+These instructions apply to the retained Git publisher only. The running service
+now uses [static publishing](static-publishing.md) and does not need Git access.
+Do not configure a publishing clone for a new installation.
 
 The publisher needs Git installed, write access to its checkout (including
 `.git`), a Git commit identity, and unattended SSH authentication to GitHub.
