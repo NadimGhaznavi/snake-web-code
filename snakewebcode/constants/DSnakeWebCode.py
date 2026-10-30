@@ -2,11 +2,11 @@ from typing import Final
 
 
 class DSnakeWebCode:
-    VERSION: Final[str] = "5.0.3"
+    VERSION: Final[str] = "5.0.4"
     CMDB_TYPE: Final[str] = "Application"
     CMDB_SUBTYPE: Final[str] = "Website Publisher"
     CMDB_SUPPLIER: Final[str] = "Nadim-Daniel"
-    CMDB_CODENAME: Final[str] = "Bismuth"
+    CMDB_CODENAME: Final[str] = "Thorium"
     CMDB_COMPONENTS: Final[tuple[tuple[str, str], ...]] = (
         ("Public Artifacts", "/var/lib/snake-web/public"),
     )
