@@ -38,64 +38,52 @@ class CredentialTests(unittest.TestCase):
 
 
 
-class MigrationTests(unittest.TestCase):
+class ReaderConfigurationTests(unittest.TestCase):
     def setUp(self):
         temp = tempfile.TemporaryDirectory()
         self.addCleanup(temp.cleanup)
-        self.legacy = Path(temp.name) / 'old/database.env'
-        self.destination = Path(temp.name) / 'new/database.env'
-        self.legacy.parent.mkdir()
+        self.destination = Path(temp.name) / 'config/database.env'
+        self.destination.parent.mkdir(mode=0o700)
         self.original = (provisioner.MARKER + '\nDB_HOST=localhost\n'
                          'DB_SOCKET=/tmp/snake-web-test.sock\nDB_NAME=snakelab\n'
                          'DB_USER=snake_web_reader\nDB_PASSWORD=' + 'a' * 64 + '\n')
-        self.legacy.write_text(self.original)
-        self.legacy.chmod(0o600)
+        self.destination.write_text(self.original)
+        self.destination.chmod(0o600)
         self.admin = MagicMock()
         self.admin.cursor.return_value.__enter__.return_value.fetchone.return_value = (1,)
 
     def provision(self):
         with patch.object(provisioner.pymysql, 'connect', return_value=MagicMock()):
-            provisioner.provision(self.admin, '/tmp/snake-web-test.sock',
-                                  self.destination, self.legacy)
+            provisioner.provision(self.admin, '/tmp/snake-web-test.sock', self.destination)
 
-    def test_migration_and_rerun_preserve_password_and_permissions(self):
+    def test_upgrade_preserves_password_and_permissions(self):
+        self.provision()
         self.provision()
         self.assertEqual(self.destination.read_text(), self.original)
         self.assertEqual(self.destination.stat().st_mode & 0o777, 0o600)
         self.assertEqual(self.destination.parent.stat().st_mode & 0o777, 0o700)
-        self.assertEqual(self.legacy.read_text(), self.original)
-        self.legacy.write_text('unrelated legacy file')
-        self.provision()
-        self.assertEqual(self.destination.read_text(), self.original)
-        self.assertEqual(self.legacy.read_text(), 'unrelated legacy file')
 
-    def test_reader_gets_only_the_five_required_tables(self):
+    def test_reader_gets_only_the_simulation_table(self):
         self.provision()
         calls = self.admin.cursor.return_value.__enter__.return_value.execute.call_args_list
         grants = [call.args[0] for call in calls if call.args[0].startswith('GRANT ')]
-        self.assertEqual(set(grants), {
-            'GRANT SELECT ON snakelab.simulation_runs TO %s@%s',
-            'GRANT SELECT ON snakelab.simulation_episodes TO %s@%s',
-            'GRANT SELECT ON snakelab.configurations TO %s@%s',
-            'GRANT SELECT ON ax3l.events TO %s@%s',
-            'GRANT SELECT ON ax3l.event_messages TO %s@%s',
-            'GRANT SELECT ON ax3l.experiment_highscores TO %s@%s',
-        })
+        self.assertEqual(grants, ['GRANT SELECT ON snakelab.simulation_runs TO %s@%s'])
+        self.assertFalse(any('ax3l.' in call.args[0] for call in calls))
+        self.assertTrue(any(call.args[0].startswith('REVOKE ALL PRIVILEGES') for call in calls))
 
-    def test_foreign_legacy_credentials_are_left_untouched(self):
-        self.legacy.write_text('DB_USER=snake_lab\n')
-        with self.assertRaisesRegex(RuntimeError, 'not managed by Snake Web'):
-            self.provision()
-        self.assertFalse(self.destination.exists())
-        self.assertEqual(self.legacy.read_text(), 'DB_USER=snake_lab\n')
-        self.assertEqual(self.admin.cursor.return_value.__enter__.return_value.execute.call_count, 7)
-
-    def test_socket_mismatch_does_not_copy_or_change_account(self):
-        self.legacy.write_text(self.original.replace('snake-web-test.sock', 'other.sock'))
+    def test_socket_mismatch_preserves_file_and_account(self):
+        self.destination.write_text(self.original.replace('snake-web-test.sock', 'other.sock'))
         with self.assertRaisesRegex(RuntimeError, 'Saved socket differs'):
             self.provision()
+        self.assertEqual(self.destination.read_text(), self.original.replace('snake-web-test.sock', 'other.sock'))
+        calls = self.admin.cursor.return_value.__enter__.return_value.execute.call_args_list
+        self.assertFalse(any(call.args[0].startswith(('CREATE USER', 'ALTER USER', 'REVOKE', 'GRANT')) for call in calls))
+
+    def test_existing_account_without_file_is_refused(self):
+        self.destination.unlink()
+        with self.assertRaisesRegex(RuntimeError, 'already exists'):
+            self.provision()
         self.assertFalse(self.destination.exists())
-        self.assertEqual(self.admin.cursor.return_value.__enter__.return_value.execute.call_count, 7)
 
 
 @unittest.skipUnless(os.environ.get('SNAKE_WEB_PROVISION_TEST_SOCKET'), 'requires isolated provisioning DB')
@@ -128,14 +116,14 @@ class ProvisioningTests(unittest.TestCase):
             with reader.cursor() as cursor:
                 cursor.execute('SELECT MAX(high_score) FROM simulation_runs')
                 self.assertEqual(cursor.fetchone()[0], 49)
-                cursor.execute('SELECT event_id FROM ax3l.events LIMIT 0')
-                cursor.execute('SELECT event_id, content FROM ax3l.event_messages LIMIT 0')
                 # Neither statement changes source data even if permissions regress.
                 for sql in ('UPDATE simulation_runs SET high_score=0 WHERE id=-1',
                             'UPDATE ax3l.events SET name=name WHERE event_id=-1',
                             'UPDATE ax3l.event_messages SET content=content WHERE event_id=-1',
                             "UPDATE configurations SET seed=seed WHERE run_id=''",
-                            'SELECT * FROM mysql.user LIMIT 0'):
+                            'SELECT * FROM mysql.user LIMIT 0',
+                            'SELECT * FROM ax3l.events LIMIT 0',
+                            'SELECT * FROM configurations LIMIT 0'):
                     with self.assertRaises(pymysql.err.OperationalError) as denied:
                         cursor.execute(sql)
                     self.assertIn(denied.exception.args[0], (1142, 1143))
@@ -154,7 +142,7 @@ class ProvisioningTests(unittest.TestCase):
             with reader.cursor() as cursor:
                 cursor.execute('SHOW GRANTS')
                 grants = [row[0] for row in cursor.fetchall()]
-                self.assertEqual(len(grants), 6)
+                self.assertEqual(len(grants), 2)
                 self.assertTrue(any('GRANT SELECT ON `snakelab`.`simulation_runs`' in row for row in grants))
                 self.assertFalse(any('INSERT' in row for row in grants))
 

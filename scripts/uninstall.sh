@@ -17,7 +17,7 @@ Usage: sudo $0
 Stop and disable snake-web.service, remove its unit, and remove
 /opt/prod/snakewebcode and all daemon code beneath it.
 Preserve the snake-web account and group, /var/lib/snake-web (including
-SSH credentials and the publishing clone), and the development checkout.
+public GIFs, credentials, and any old website checkout), and the development checkout.
 Safe to rerun when the production directory has already been removed.
 EOF
 }

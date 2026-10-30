@@ -11,7 +11,7 @@ Deploy the Python code to /opt/prod/snakewebcode, update the systemd unit,
 reload systemd, and enable and restart snake-web.service.
 
 Also supports the first deployment. Preserves /var/lib/snake-web,
-including SSH credentials and the publishing clone.
+including public GIFs, credentials, and any old website checkout.
 Preserves /etc/snake-web/snake-web.env and /etc/snake-web/database.env and reapplies the dedicated reader privileges.
 Uses the files in this checkout; does not fetch or switch Git releases.
 EOF

@@ -28,15 +28,7 @@ For the one-time switch from Git publication to Caddy, follow
 [static publishing](static-publishing.md#upgrade-from-git-publication) before
 upgrading. No history rewrite or source reset is part of the switch.
 
-## Upgrading from `/opt/prod/snake-web`
-
-The installer deploys a fresh virtual environment and the renamed `snakewebcode`
-package under `/opt/prod/snakewebcode`, then updates the existing `snake-web.service`
-to use it. The service account, configuration paths, database reader, and publishing
-checkout retain their existing names and data. No source database migration or
-publication reset is needed.
-
-The old `/opt/prod/snake-web` directory is left in place and is no longer used by
-the updated service or `push-now.sh`. Remove it only after a successful upgrade
-and verification of the new service. A failed installation may already have
-copied the new code; inspect the error and service status before retrying.
+The upgrade removes retired report exporters, templates, and the Git publisher
+from the installed application. It narrows the dedicated reader to SELECT on
+`snakelab.simulation_runs`, preserving its saved password. Public artifacts, old
+website checkouts, and source experiment data are not removed.

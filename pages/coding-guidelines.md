@@ -20,7 +20,7 @@ into an unrelated refactor.
 
 Snake Web publishes captured daily Snake games and an Ax3l-compatible animated
 score distribution as static artifacts served by Caddy. This repository owns the Python
-publisher, its templates and report assets, deployment scripts, and tests.
+publisher, GIF renderers, deployment scripts, and tests.
 The separate `snake-web` repository owns website pages and Jekyll configuration.
 Snake Lab and Ax3l own simulation execution, optimization, and source schemas.
 
@@ -56,10 +56,8 @@ and services only for demonstrated requirements.
 | `pages/` | Canonical development guidelines |
 | `docs/devops/` | Installation, publication, and maintenance guides |
 | `snakewebcode/server.py` | Application wiring, scheduling, and lifecycle |
-| `snakewebcode/entity/` | Data entities |
 | `snakewebcode/activity/` | Application queries, exports, rendering, and publishing operations |
-| `snakewebcode/activity/reports/` | Static report templates and browser scripts |
-| `snakewebcode/interface/` | Database, Snake Lab, filesystem, and Git boundaries |
+| `snakewebcode/interface/` | Database, Snake Lab, filesystem, and GIF encoding boundaries |
 | `snakewebcode/constants/` | Version and shared definitions |
 | `scripts/` | Installation, maintenance, and release tooling |
 | `systemd/` | Service unit and environment template |
@@ -73,7 +71,7 @@ The data abstraction layer MUST follow this call flow:
 `AppDb` owns SQL, query rules, and interpretation of source records. `DbMgr`
 owns connections, parameterized execution, transactions, and cleanup, returning
 rows without interpreting application concepts. Application operations MUST
-request data through `AppDb`. Rendering and Git publication remain outside the DAL.
+request data through `AppDb`. Rendering and filesystem publication remain outside the DAL.
 
 ## Configuration and external interfaces
 
@@ -81,10 +79,10 @@ request data through `AppDb`. Rendering and Git publication remain outside the D
   dedicated reader's required grants; do not initialize source application tables.
 - Snake Lab capture retrieval MUST follow its versioned ZMQ contract and validate
   external responses before rendering. Keep Ax3l-compatible capture and animation behavior.
-- Validate configuration, source records, export cursors, and publishing paths
+- Validate configuration, source records, saved game metadata, and publishing paths
   at their boundaries. Internal callers MUST trust validated objects and contracts.
-- Keep public export fields explicit. Preserve the event allowlist and sanitization
-  rules; do not expose credentials, private responses, or unapproved source payloads.
+- Keep public metadata fields explicit; do not expose credentials, private
+  responses, or unapproved source payloads.
 - Network and subprocess operations MUST have explicit timeouts.
 - Credentials and secrets MUST NOT appear in logs, public artifacts, or command arguments.
 
@@ -112,11 +110,6 @@ capture outages, remove unused slots, and start a new ranking at day rollover.
 Preserve Ax3l's game and cumulative histogram rendering. See the
 [project overview](../README.md) for selection and cache contracts.
 
-Retained legacy Git publication helpers still require a dedicated, serialized,
-clean checkout on the configured branch, managed-path commits, fast-forward
-remote synchronization, and failed-push retries. Never force-push routinely or
-reset old export cursors to conceal source-history replacement.
-
 ## Installation and production
 
 Installation deploys code to `/opt/prod/snakewebcode` and runs `snake-web.service`
@@ -124,8 +117,7 @@ as the `snake-web` account. Configuration lives in `/etc/snake-web`; persistent
 state, SSH credentials, and the default public artifacts live under
 `/var/lib/snake-web`. Keep development and deployment checkouts separate from public artifacts.
 
-Installation MUST deploy every required module, template, browser asset, and
-Python dependency. Upgrades and uninstallation MUST preserve configuration,
+Installation MUST deploy every required module, font, and Python dependency. Upgrades and uninstallation MUST preserve configuration,
 credentials, old publishing checkouts, and saved publication data. Configuration
 and credential files MUST have restrictive permissions. Maintenance requires
 root; the running publisher uses its dedicated account and read-only DB access.
@@ -165,11 +157,9 @@ repositories and local remotes, isolated databases, and simulated control interf
 Routine verification MUST NOT modify production experiments or publish to the
 live website without the owner's authorization.
 
-Query and export changes MUST cover ordering, ties, null and zero scores,
-source boundaries, sanitization, cursor advancement, and repeated exports as
-applicable. Static publication changes MUST cover unchanged content, interrupted-write retries,
-concurrency, invalid paths, and game reuse. Changes to legacy Git helpers
-MUST cover failed-push retries, remote advances, and dirty or diverged checkouts.
+Query changes MUST cover ordering, ties, null and zero scores, and source-day
+boundaries as applicable. Static publication changes MUST cover unchanged content, interrupted-write retries,
+concurrency, invalid paths, and game reuse.
 
 Daily-game changes MUST cover missing captures, exclusion of legacy SVG-only
 results, GIF reuse and replacement, day rollover, capture-service failures,
