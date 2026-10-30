@@ -6,9 +6,6 @@
 - [Uninstall Snake Web](uninstall.md)
 - [Static publishing with Caddy](static-publishing.md)
 - [One-time wintermute deployment](wintermute-deployment.md)
-- [Legacy Git Access](git-access.md)
 - [CMDB discovery](cmdb-discovery.md)
 - [Releases](releases.md)
 - [Coding Guidelines](coding-guidelines.md)
-
-- [Reset legacy Git exports for a new machine](reset-site.md)

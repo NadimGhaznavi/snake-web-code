@@ -15,7 +15,6 @@ import pymysql
 
 
 CREDENTIALS = Path('/etc/snake-web/database.env')
-LEGACY_CREDENTIALS = Path('/etc/snake-lab/database.env')
 MARKER = '# Managed by snake-web: dedicated read-only database account'
 DB_USER = 'snake_web_reader'
 DB_NAME = 'snakelab'
@@ -43,7 +42,7 @@ def load_credentials(path):
     return values
 
 
-def provision(admin, socket_path, credentials=CREDENTIALS, legacy_credentials=None):
+def provision(admin, socket_path, credentials=CREDENTIALS):
     """The caller supplies an admin connection; source application data is never changed."""
     credentials = Path(credentials)
     if not re.fullmatch(r'/[A-Za-z0-9_./-]+', socket_path):
@@ -59,12 +58,8 @@ def provision(admin, socket_path, credentials=CREDENTIALS, legacy_credentials=No
         fcntl.flock(lock, fcntl.LOCK_EX)
         with admin.cursor() as cursor:
             # Require the source schema to exist; never install Snake Lab's schema here.
-            cursor.execute('SELECT run_id FROM snakelab.configurations LIMIT 0')
-            cursor.execute('SELECT high_score, high_score_snapshot FROM snakelab.simulation_runs LIMIT 0')
-            cursor.execute('SELECT steps FROM snakelab.simulation_episodes LIMIT 0')
-            cursor.execute('SELECT event_id, occurred_at, category, name, process_id FROM ax3l.events LIMIT 0')
-            cursor.execute('SELECT event_id, content FROM ax3l.event_messages LIMIT 0')
-            cursor.execute('SELECT event_id, simulations, score, seed FROM ax3l.experiment_highscores LIMIT 0')
+            cursor.execute('SELECT id, run_id, high_score, status, completed_at '
+                           'FROM snakelab.simulation_runs LIMIT 0')
             cursor.execute('SELECT COUNT(*) FROM mysql.user WHERE User=%s AND Host=%s', (DB_USER, 'localhost'))
             account_exists = cursor.fetchone()[0] != 0
             if credentials.exists() or credentials.is_symlink():
@@ -72,18 +67,10 @@ def provision(admin, socket_path, credentials=CREDENTIALS, legacy_credentials=No
                 if values['DB_SOCKET'] != socket_path:
                     raise RuntimeError('Saved socket differs from local MariaDB; credentials left unchanged')
             else:
-                legacy = Path(legacy_credentials) if legacy_credentials is not None else None
-                if legacy is not None and (legacy.exists() or legacy.is_symlink()):
-                    if any(parent.is_symlink() for parent in legacy.parents):
-                        raise RuntimeError('Legacy database configuration directory must not be a symlink')
-                    values = load_credentials(legacy)
-                    if values['DB_SOCKET'] != socket_path:
-                        raise RuntimeError('Saved socket differs from local MariaDB; credentials left unchanged')
-                else:
-                    if account_exists:
-                        raise RuntimeError('Reader account already exists without a managed credential file; left untouched')
-                    values = dict(DB_HOST='localhost', DB_SOCKET=socket_path, DB_NAME=DB_NAME,
-                                  DB_USER=DB_USER, DB_PASSWORD=secrets.token_hex(32))
+                if account_exists:
+                    raise RuntimeError('Reader account already exists without a managed credential file; left untouched')
+                values = dict(DB_HOST='localhost', DB_SOCKET=socket_path, DB_NAME=DB_NAME,
+                              DB_USER=DB_USER, DB_PASSWORD=secrets.token_hex(32))
                 # Save first so an interrupted DB operation can reuse the same password.
                 with tempfile.NamedTemporaryFile(mode='w', dir=credentials.parent) as stream:
                     stream.write(MARKER + '\n')
@@ -97,15 +84,13 @@ def provision(admin, socket_path, credentials=CREDENTIALS, legacy_credentials=No
             cursor.execute('ALTER USER %s@%s IDENTIFIED BY %s',
                            (DB_USER, 'localhost', values['DB_PASSWORD']))
             cursor.execute('REVOKE ALL PRIVILEGES, GRANT OPTION FROM %s@%s', (DB_USER, 'localhost'))
-            for table in ('snakelab.simulation_runs', 'snakelab.simulation_episodes', 'snakelab.configurations', 'ax3l.events', 'ax3l.event_messages', 'ax3l.experiment_highscores'):
-                cursor.execute(f'GRANT SELECT ON {table} TO %s@%s', (DB_USER, 'localhost'))
+            cursor.execute('GRANT SELECT ON snakelab.simulation_runs TO %s@%s',
+                           (DB_USER, 'localhost'))
         with pymysql.connect(unix_socket=socket_path, user=DB_USER, password=values['DB_PASSWORD'],
-                             database=DB_NAME, connect_timeout=10) as reader:
+                             database=DB_NAME, connect_timeout=10, read_timeout=30, write_timeout=30) as reader:
             with reader.cursor() as cursor:
                 cursor.execute('SELECT MAX(high_score) FROM simulation_runs')
                 cursor.fetchone()
-                cursor.execute('SELECT event_id FROM ax3l.events LIMIT 0')
-                cursor.execute('SELECT event_id FROM ax3l.event_messages LIMIT 0')
 
 
 def main():
@@ -121,9 +106,9 @@ def main():
         socket_path = result.stdout.strip()
         with pymysql.connect(unix_socket=socket_path, user='root', autocommit=True,
                              connect_timeout=10, read_timeout=30, write_timeout=30) as admin:
-            provision(admin, socket_path, legacy_credentials=LEGACY_CREDENTIALS)
+            provision(admin, socket_path)
     except pymysql.MySQLError as exc:
-        print(f'Database provisioning failed (MariaDB error {exc.args[0]}). Check local root access, Snake Lab snapshot schema, and Ax3l event tables.', file=sys.stderr)
+        print(f'Database provisioning failed (MariaDB error {exc.args[0]}). Check local root access and the Snake Lab simulation schema.', file=sys.stderr)
         return 1
     except subprocess.SubprocessError:
         print('Cannot discover local MariaDB socket. Check mariadb client and local root access.', file=sys.stderr)

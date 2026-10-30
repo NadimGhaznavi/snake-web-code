@@ -89,6 +89,4 @@ The lock file lives alongside the public directory, outside Caddy's root.
 Files are replaced individually. The saved game list is removed before changes
 and written last, so an interrupted pass regenerates games on the next attempt.
 A request during publication can briefly receive a missing metadata response;
-reload after the pass completes. Stop the publisher before restoring data. Do not
-use the legacy Git site-reset script on the public directory or reset source
-databases as a recovery measure.
+reload after the pass completes. Stop the publisher before restoring data. Do not reset source databases as a recovery measure.

@@ -18,7 +18,7 @@ checkouts and the separate `snake-web` website repository are not discovery targ
 | `CMDB_SUPPLIER` | `Nadim-Daniel` |
 | `CMDB_CODENAME` | Release message, maintained by the release script |
 | `CMDB_COMPONENTS` | `Public Artifacts` at `/var/lib/snake-web/public` |
-| `CMDB_DATABASES` | `Snake Lab` → `snakelab`; `Ax3l` → `ax3l` |
+| `CMDB_DATABASES` | `Snake Lab` → `snakelab` |
 | `CMDB_NETWORK` | Empty tuple; the publisher opens no listeners |
 
 The filesystem component contains the public GIFs and live metadata. Its literal
@@ -33,12 +33,12 @@ access for the public directory if using CMDB backups; keep SSH keys and
 credential files restricted. The declaration excludes the service's `.ssh` directory
 and `/etc/snake-web` configuration.
 
-Database references match exact catalog names on the application's host through
-the default local MariaDB socket. They do not create databases or alter Snake Web's
+The database reference matches its exact catalog name on the application's host through
+the default local MariaDB socket. It does not create databases or alter Snake Web's
 read-only grants. The Snake Lab ZMQ endpoint and MariaDB connection
 are outbound dependencies and are not network listeners.
 
 Use **Re-Scan Applications** on the inventoried host. Verify the version,
-classification, codename, public directory, and both database references.
+classification, codename, public directory, and the Snake Lab database reference.
 Expect no listener rows for SnakeWebCode. A missing file, unreadable file, or invalid
 version prevents detection; check the installation path and agent access first.

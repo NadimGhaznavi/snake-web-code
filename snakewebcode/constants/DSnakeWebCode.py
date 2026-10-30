@@ -12,6 +12,5 @@ class DSnakeWebCode:
     )
     CMDB_DATABASES: Final[tuple[tuple[str, str], ...]] = (
         ("Snake Lab", "snakelab"),
-        ("Ax3l", "ax3l"),
     )
-    DAILY_GAME_LIMIT: Final[int] = 10
+    DAILY_GAME_LIMIT: Final[int] = 5

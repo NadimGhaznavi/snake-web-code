@@ -133,10 +133,17 @@ class InstallationTests(unittest.TestCase):
         legacy.write_text("previous installation\n")
         saved = {path: (path.read_bytes(), path.stat().st_mode) for path in
                  (environment, credentials, key, cursor, public, legacy)}
+        retired = [self.deployed / 'snakewebcode' / name for name in (
+            'interface/GitPublisher.py', 'activity/PublishStatus.py',
+            'activity/reports/event-log.html', 'entity/ExperimentStatus.py')]
+        for path in retired:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text('retired application code\n')
         constants.write_text('VERSION = "old"\n')
         result = self.run_script("upgrade.sh")
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertEqual(constants.read_bytes(), (ROOT / "snakewebcode/constants/DSnakeWebCode.py").read_bytes())
+        self.assertTrue(all(not path.exists() for path in retired))
         for path, (content, mode) in saved.items():
             self.assertEqual((path.read_bytes(), path.stat().st_mode), (content, mode))
         installs = [command for command in self.commands() if command[0] == "install"]
@@ -155,10 +162,14 @@ class InstallationTests(unittest.TestCase):
 
     def test_provisioning_failure_leaves_existing_service_unit_untouched(self):
         self.unit.write_text("previous service unit\n")
+        retired = self.deployed / 'snakewebcode/activity/reports/event-log.html'
+        retired.parent.mkdir(parents=True)
+        retired.write_text('previous report asset\n')
         result = self.run_script("upgrade.sh", SNAKEWEB_TEST_PROVISION_FAIL="1")
         self.assertEqual(result.returncode, 7, result.stdout + result.stderr)
         self.assertTrue((self.deployed / "snakewebcode/constants/DSnakeWebCode.py").is_file())
         self.assertEqual(self.unit.read_text(), "previous service unit\n")
+        self.assertEqual(retired.read_text(), 'previous report asset\n')
         self.assertFalse(any(command[0] == "systemctl" for command in self.commands()))
 
     def test_manual_publication_uses_new_code_with_existing_identity_and_configuration(self):
