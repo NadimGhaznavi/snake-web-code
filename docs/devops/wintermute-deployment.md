@@ -1,11 +1,8 @@
 # One-time wintermute deployment
 
-Read-only SSH inspection on 30 October 2026 found Snake Web 5.0.0 already
-installed and running. Its environment still has the legacy Git settings, and
-the public directory and Snake Caddy site have not been created. Caddy 2.6.2
-serves MyCount through `/etc/caddy/mycount.caddy`, imported by the main Caddyfile.
-Both public hostnames resolve to the same address. MyCount maintains the existing
-port 80/443 router mappings.
+Configure Snake Web's Caddy site on wintermute after installing the static
+publisher. The script preserves MyCount's existing Caddy site and uses the
+host's current port 80/443 router mappings.
 
 Copy or commit/pull the reviewed script and `systemd/Caddyfile.snake` into the
 deployment checkout on wintermute. From that checkout, run:
@@ -28,9 +25,8 @@ It:
 4. Sets `PUBLISH_DIRECTORY`, restarts Snake Web, and publishes once immediately.
 5. Checks that Caddy can read the metadata and histogram.
 
-MyCount's files, services, router mappings, database credentials, old exports, and
-Git checkouts are preserved. Legacy Git environment settings remain but are ignored
-by the static publisher. If a later step fails, the script exits nonzero and
+MyCount's files, services, router mappings, database credentials, and saved
+publication data are preserved. If a later step fails, the script exits nonzero and
 reports the backup directory; earlier successful steps remain applied.
 
 Check certificate issuance in the Caddy journal and verify:

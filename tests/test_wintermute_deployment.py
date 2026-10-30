@@ -58,7 +58,7 @@ class WintermuteDeploymentTests(unittest.TestCase):
         f.home.mkdir()
         f.config.mkdir(parents=True)
         self.environment = f.config / 'snake-web.env'
-        self.settings = 'PUBLISH_CHECKOUT=/saved/site\nPUBLISH_BRANCH=main\nSNAKE_LAB_ENDPOINT=tcp://127.0.0.1:41970\n'
+        self.settings = 'SNAKE_LAB_ENDPOINT=tcp://127.0.0.1:41970\n'
         self.environment.write_text(self.settings)
         self.environment.chmod(0o600)
         publisher = f.deployed / 'snakewebcode/interface/StaticPublisher.py'
