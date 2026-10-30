@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.0.1] - 2026-10-30 @ 01:17
+
 ### Added
 
 - Add a one-time wintermute environment/Caddy deployment script based on the
