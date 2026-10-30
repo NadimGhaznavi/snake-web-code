@@ -12,8 +12,8 @@ from PIL import Image
 import zmq
 
 from snakewebcode.activity.AppDb import AppDb
-from snakewebcode.activity.DailyGames import export_daily_games, render_daily_games
-from snakewebcode.interface.GitPublisher import GitPublisher
+from snakewebcode.activity.DailyGames import export_daily_games
+from snakewebcode.interface.StaticPublisher import StaticPublisher
 from snakewebcode.interface.SnakeLab import SnakeLab, SnakeLabQueryError
 
 
@@ -33,7 +33,7 @@ class DailyGamesTests(unittest.TestCase):
         self.files = {}
         self.publisher = Mock()
         for name in ('DAILY_PATH', 'DAILY_GIF_PATHS'):
-            setattr(self.publisher, name, getattr(GitPublisher, name))
+            setattr(self.publisher, name, getattr(StaticPublisher, name))
         self.publisher.read_history.side_effect = lambda name: self.files.get(name, '')
         self.publisher.read_bytes.side_effect = lambda name: self.files.get(name, b'')
         self.app = Mock()
@@ -47,15 +47,15 @@ class DailyGamesTests(unittest.TestCase):
         self.files.update(files)
         return games, files
 
-    def test_skip_legacy_and_continue_until_ten_captured_games(self):
+    def test_skip_legacy_and_continue_until_five_captured_games(self):
         self.snake.get_highscore_frames.side_effect = lambda uuid: (
             None if int(UUID(uuid)) <= 3 else frames(int(UUID(uuid))))
         games, files = self.export([run(1, 100), run(2, 90), run(3, 80)]
                                   + [run(number, number) for number in range(15, 3, -1)])
-        self.assertEqual([game['id'] for game in games], list(range(15, 5, -1)))
-        self.assertEqual(self.snake.get_highscore_frames.call_count, 13)
-        self.assertEqual(len(GitPublisher.DAILY_GIF_PATHS), 10)
-        for path in GitPublisher.DAILY_GIF_PATHS:
+        self.assertEqual([game['id'] for game in games], list(range(15, 10, -1)))
+        self.assertEqual(self.snake.get_highscore_frames.call_count, 8)
+        self.assertEqual(len(StaticPublisher.DAILY_GIF_PATHS), 5)
+        for path in StaticPublisher.DAILY_GIF_PATHS:
             with Image.open(BytesIO(files[path])) as gif:
                 self.assertEqual(gif.info['loop'], 0)
                 self.assertGreater(gif.n_frames, 1)
@@ -64,44 +64,39 @@ class DailyGamesTests(unittest.TestCase):
 
     def test_restart_reuses_gifs_and_new_winner_moves_cached_slots(self):
         self.export([run(3, 3), run(2, 2), run(1, 1)])
-        old_bytes = self.files[GitPublisher.DAILY_GIF_PATHS[0]]
+        old_bytes = self.files[StaticPublisher.DAILY_GIF_PATHS[0]]
         self.snake.get_highscore_frames.reset_mock()
         games, files = self.export([run(4, 4), run(3, 3), run(2, 2), run(1, 1)])
         self.snake.get_highscore_frames.assert_called_once_with(run(4, 4)['run_id'])
         self.assertEqual([g['id'] for g in games], [4, 3, 2, 1])
-        self.assertEqual(files[GitPublisher.DAILY_GIF_PATHS[1]], old_bytes)
+        self.assertEqual(files[StaticPublisher.DAILY_GIF_PATHS[1]], old_bytes)
         self.snake.get_highscore_frames.reset_mock()
         self.export([run(4, 4), run(3, 3), run(2, 2), run(1, 1)])
         self.snake.get_highscore_frames.assert_not_called()
 
-    def test_ten_game_state_reuses_cache_and_replaces_last_slot(self):
-        self.export([run(number, number) for number in range(10, 0, -1)])
+    def test_five_game_state_reuses_cache_and_replaces_last_slot(self):
+        self.export([run(number, number) for number in range(5, 0, -1)])
         self.snake.get_highscore_frames.reset_mock()
-        self.export([run(number, number) for number in range(10, 0, -1)])
+        self.export([run(number, number) for number in range(5, 0, -1)])
         self.snake.get_highscore_frames.assert_not_called()
-        previous_ninth = self.files[GitPublisher.DAILY_GIF_PATHS[8]]
-        games, files = self.export([run(number, number) for number in range(11, 0, -1)])
-        self.snake.get_highscore_frames.assert_called_once_with(run(11, 11)['run_id'])
-        self.assertEqual([game['id'] for game in games], list(range(11, 1, -1)))
-        self.assertEqual(files[GitPublisher.DAILY_GIF_PATHS[9]], previous_ninth)
-        html = render_daily_games(games)
-        self.assertEqual(html.count('<figure'), 10)
-        self.assertEqual(html.count(' hidden'), 9)
-        self.assertIn('reports/games/daily-10.gif?', html)
+        previous_fourth = self.files[StaticPublisher.DAILY_GIF_PATHS[3]]
+        games, files = self.export([run(number, number) for number in range(6, 0, -1)])
+        self.snake.get_highscore_frames.assert_called_once_with(run(6, 6)['run_id'])
+        self.assertEqual([game['id'] for game in games], list(range(6, 1, -1)))
+        self.assertEqual(files[StaticPublisher.DAILY_GIF_PATHS[4]], previous_fourth)
 
     def test_day_rollover_is_blank_and_never_uses_yesterdays_games(self):
         self.export([run(1, 1)])
         self.app.get_daily_game_day.return_value = date(2026, 10, 11)
         games, files = self.export([])
         self.assertEqual(games, [])
-        self.assertEqual(json.loads(files[GitPublisher.DAILY_PATH])['games'], [])
-        self.assertEqual(render_daily_games(games), '')
+        self.assertEqual(json.loads(files[StaticPublisher.DAILY_PATH])['games'], [])
 
     def test_renderer_change_regenerates_capture(self):
         self.export([run(1, 1)])
-        state = json.loads(self.files[GitPublisher.DAILY_PATH])
+        state = json.loads(self.files[StaticPublisher.DAILY_PATH])
         state['renderer'] -= 1
-        self.files[GitPublisher.DAILY_PATH] = json.dumps(state)
+        self.files[StaticPublisher.DAILY_PATH] = json.dumps(state)
         self.snake.get_highscore_frames.reset_mock()
         self.export([run(1, 1)])
         self.snake.get_highscore_frames.assert_called_once()
@@ -113,15 +108,12 @@ class DailyGamesTests(unittest.TestCase):
             games, _ = self.export([run(5, 5), run(4, 4), run(2, 2), run(1, 1)])
         self.assertEqual([g['id'] for g in games], [2, 1])
 
-    def test_zero_qualifies_and_caption_has_simulation_id(self):
-        self.snake.get_highscore_frames.return_value = frames(0)
+    def test_zero_qualifies(self):
         self.snake.get_highscore_frames.side_effect = None
-        games, _ = self.export([run(41, 0)])
-        html = render_daily_games(games)
-        self.assertIn('Simulation #41 - Highscore 0', html)
-        self.assertIn('.gif?', html)
-        self.assertNotIn('svg', html)
-        self.assertNotIn(' hidden', html)
+        self.snake.get_highscore_frames.return_value = frames(0)
+        games, files = self.export([run(41, 0)])
+        self.assertEqual(games, [run(41, 0)])
+        self.assertTrue(files[StaticPublisher.DAILY_GIF_PATHS[0]].startswith(b'GIF89a'))
 
     def test_score_mismatch_fails_before_any_files_are_written(self):
         with self.assertRaisesRegex(ValueError, 'score differs'):

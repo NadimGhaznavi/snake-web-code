@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Remove the retired Git publisher, report exporters, templates, browser assets,
+  export-reset tooling, and unused database queries. Upgrades remove their
+  installed application files while preserving saved data and configuration.
+- Restrict the database reader and provisioning checks to Snake Lab simulation
+  data, preserving saved credentials and removing obsolete grants.
+- Use five daily game slots throughout the publisher. Preserve automatic
+  half-hour refresh, Ax3l rendering, and reuse of unchanged captured games.
+- Let unexpected programming errors escape the scheduler instead of logging and
+  retrying them indefinitely; expected publication failures still retry later.
+
 ## [5.0.1] - 2026-10-30 @ 01:17
 
 ### Added

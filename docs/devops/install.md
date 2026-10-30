@@ -6,11 +6,10 @@ for Caddy. The project owner handles production rollout.
 ## Prerequisites
 
 Use Python 3 with venv support, systemd, the MariaDB client, and package download
-access. Install and configure Snake Lab and Ax3l first. The existing reader
-provisioner verifies the Snake Lab simulation, episode, and configuration tables
-and Ax3l event, message, and high-score tables; it never creates source tables.
-The new publication path reads only `snakelab.simulation_runs` and the Snake Lab
-capture service. Database access remains read-only.
+access. Snake Lab must provide `snakelab.simulation_runs` with `id`, `run_id`,
+`high_score`, `status`, and `completed_at`, plus the version-1 capture service.
+Ax3l owns the experiment workflow; the publisher reads the resulting Snake Lab
+records and never creates or changes source tables.
 
 Confirm the intended production host and source before installation. Use restored,
 isolated data for development; do not point verification at live experiments.
@@ -37,11 +36,12 @@ Root-only configuration lives under `/etc/snake-web` (directory mode `0700`):
   saved password and repairs only the dedicated reader's SELECT grants.
 - `snake-web.env`: publication settings, mode `0600`, preserved on upgrade.
 
-The existing provisioner grants SELECT on `snakelab.simulation_runs`,
-`snakelab.simulation_episodes`, `snakelab.configurations`, `ax3l.events`,
-`ax3l.event_messages`, and `ax3l.experiment_highscores`. It does not alter source
-schemas or application accounts. If provisioning fails, code may already have
-been copied; inspect the failure before retrying.
+The provisioner grants SELECT only on `snakelab.simulation_runs`. On upgrade it
+removes obsolete grants from this dedicated reader while preserving its password.
+It does not alter source schemas or application accounts. The installer also
+removes retired report and Git-publisher code from the installed package, leaving
+public artifacts and saved website checkouts intact. If provisioning fails,
+code may already have been copied; inspect the failure before retrying.
 
 ## Configure publication
 
@@ -72,8 +72,8 @@ python3 -m venv .venv
 .venv/bin/python -m unittest discover -s tests -v
 ```
 
-Tests use temporary files, disposable Git repositories for retained legacy
-helpers, and simulated system services. Optional database tests require an
+Tests use temporary files, disposable Git repositories for release tooling,
+and simulated system services. Optional database tests require an
 isolated MariaDB instance under a `/tmp/snake-web-*` socket; set
 `SNAKE_WEB_TEST_DB_SOCKET` to enable them. Reader-provisioning tests additionally
 require `SNAKE_WEB_PROVISION_TEST_SOCKET`. Never use production databases for these

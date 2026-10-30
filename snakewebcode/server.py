@@ -1,4 +1,4 @@
-"""Periodic status publishing, or a single publishing pass with --once."""
+"""Refresh public GIFs on the hour and half hour, or immediately with --once."""
 
 import argparse
 from datetime import datetime, timedelta
@@ -6,6 +6,9 @@ import logging
 import os
 import signal
 import threading
+
+import pymysql
+import zmq
 
 from snakewebcode.activity.AppDb import AppDb
 from snakewebcode.activity.PublishLive import PublishLive
@@ -43,8 +46,8 @@ def main() -> int:
             break
         try:
             logging.info(publish_once())
-        except Exception as exc:
-            logging.error("Status publishing failed: %s", exc)
+        except (OSError, RuntimeError, ValueError, pymysql.MySQLError, zmq.ZMQError) as exc:
+            logging.error("Static publication failed: %s", exc)
             if args.once:
                 return 1
         if args.once:

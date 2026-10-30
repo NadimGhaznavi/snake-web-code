@@ -30,7 +30,8 @@ SVG-only games are excluded; zero scores qualify. If fewer than five captures
 exist, only those files are published. Midnight UTC starts a new ranking on the
 next publication pass; there is no backfill from earlier days.
 
-Game drawing follows Ax3l, using the BMForge GIF encoder with Pillow 12.3.0, including its labels, digestion effect,
+Game drawing follows Ax3l, using the BMForge GIF encoder with Pillow 12.3.0,
+including its labels and digestion effect,
 75 ms moves, and one-second final pause. Capture retrieval uses Snake Lab's
 version-1 `simulation.highscore_frames` ZMQ contract. Configure `SNAKE_LAB_ENDPOINT`
 if it differs from `tcp://127.0.0.1:41970`.
@@ -39,7 +40,8 @@ Unchanged games reuse their saved GIFs, including after restarts and rank change
 During capture-service outages, available cached leaders for the current day remain
 published; missing captures are retried on the next pass. Renderer upgrades
 regenerate captures. The publisher removes unused game slots, locks concurrent
-publication, and replaces each file atomically. It invalidates `live.json` before changing slots and writes it last, so an
+publication, and replaces each file atomically. It invalidates `live.json` before changing
+slots and writes it last, so an
 interrupted write triggers fresh rendering on the next pass.
 A failed pass returns nonzero with `--once` or logs an error and retries later.
 Unchanged publications retain the existing files and update time.
@@ -49,7 +51,8 @@ checkpoints every 500 simulation IDs for two seconds each, then all simulations
 for five seconds. The final distribution fixes both axes for every frame. Missing
 IDs retain their checkpoint boundaries; null scores count as submitted but have
 no bars, and zero is scored. The histogram includes the whole experiment, including
-current scores for runs still in progress. Each pass renders the current distribution; identical bytes are left untouched.
+current scores for runs still in progress. Each pass renders the current
+distribution; identical bytes are left untouched.
 
 The minimal website displays **Ax3l Live**, **LLM configured Snake AI**, the latest
 publication time in Toronto (`YYYY-MM-DD HH:MM`), one game with wrapping arrows,
@@ -66,3 +69,6 @@ checkout. The installed service lives at `/opt/prod/snakewebcode`.
 See [DevOps documentation](docs/devops/index.md) for installation, upgrade,
 publication, and CMDB discovery. The project owner handles production rollout.
 Existing website clones, credentials, and old exports are preserved on upgrade.
+
+Upgrades remove retired report/Git-publisher code and restrict the dedicated
+database reader to SELECT on `snakelab.simulation_runs`.

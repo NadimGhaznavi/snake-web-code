@@ -39,7 +39,7 @@ def read_daily_state(content):
     return state
 
 
-def export_daily_games(appdb, publisher, snake=None, *, limit=DSnakeWebCode.DAILY_GAME_LIMIT):
+def export_daily_games(appdb, publisher, snake=None):
     day = appdb.get_daily_game_day()
     previous = read_daily_state(publisher.read_history(publisher.DAILY_PATH))
     cache = {}
@@ -71,24 +71,9 @@ def export_daily_games(appdb, publisher, snake=None, *, limit=DSnakeWebCode.DAIL
             continue  # Legacy SVG-only games never qualify.
         files[publisher.DAILY_GIF_PATHS[len(games)]] = animation
         games.append(game)
-        if len(games) == limit:
+        if len(games) == DSnakeWebCode.DAILY_GAME_LIMIT:
             break
     state = dict(version=1, day=day.isoformat(), renderer=SimulationAnimation.VERSION,
                  duration_ms=DURATION_MS, games=games)
     files[publisher.DAILY_PATH] = json.dumps(state, indent=2) + '\n'
     return games, files
-
-
-def render_daily_games(games):
-    figures = []
-    for rank, row in enumerate(games, 1):
-        game = game_record(row)
-        url = (f'reports/games/daily-{rank}.gif?run={game["run_id"]}'
-               f'&amp;renderer={SimulationAnimation.VERSION}&amp;score={game["high_score"]}')
-        figures.append(
-            f'<figure class="daily-game" aria-label="Simulation #{game["id"]} - Highscore {game["high_score"]}"'
-            f'{" hidden" if rank > 1 else ""}>'
-            f'<img class="simulation-board" src="{url}" '
-            f'alt="Animated game from simulation {game["id"]}">'
-            '</figure>')
-    return '\n'.join(figures)

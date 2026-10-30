@@ -9,7 +9,6 @@ source_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 unit_path=/etc/systemd/system/snake-web.service
 config_dir=/etc/snake-web
 environment_file=${config_dir}/snake-web.env
-legacy_environment_file=/etc/snake-web.env
 
 fail() {
     printf 'Error: %s\n' "$*" >&2
@@ -49,52 +48,32 @@ code_files=(
     snakewebcode/__init__.py
     snakewebcode/server.py
     snakewebcode/constants/DSnakeWebCode.py
+    snakewebcode/constants/DSnakeLab.py
     snakewebcode/activity/AppDb.py
-    snakewebcode/activity/PublishStatus.py
     snakewebcode/activity/PublishLive.py
-    snakewebcode/activity/ScoreDistribution.py
-    snakewebcode/activity/SimulationBoard.py
     snakewebcode/activity/DailyGames.py
-    snakewebcode/activity/DailyProgress.py
+    snakewebcode/activity/ScoreDistribution.py
     snakewebcode/activity/SimulationAnimation.py
     snakewebcode/activity/fonts/DejaVuSansMono.ttf
     snakewebcode/activity/fonts/LICENSE.txt
-    snakewebcode/activity/reports/daily-games.js
-    snakewebcode/interface/SnakeLab.py
-    snakewebcode/constants/DSnakeLab.py
-    snakewebcode/activity/TopRuns.py
-    snakewebcode/activity/reports/top-100.html
-    snakewebcode/activity/reports/top-100.js
-    snakewebcode/activity/homepage.html
-    snakewebcode/activity/EventLogExport.py
-    snakewebcode/constants/PublicEvents.py
-    snakewebcode/activity/reports/event-log.html
-    snakewebcode/activity/reports/event-detail.html
-    snakewebcode/activity/reports/event-log.js
-    snakewebcode/activity/reports/report-csv.js
-    snakewebcode/activity/GoldenHistory.py
-    snakewebcode/activity/GoldenConfigurations.py
-    snakewebcode/constants/ReportLabels.py
-    snakewebcode/activity/reports/golden-configurations.html
-    snakewebcode/activity/reports/golden-detail.html
-    snakewebcode/activity/reports/golden-configurations.js
-    snakewebcode/activity/HighscoreHistory.py
-    snakewebcode/activity/RunScoreHistory.py
-    snakewebcode/activity/reports/score-distribution.html
-    snakewebcode/activity/reports/score-distribution.js
-    snakewebcode/activity/reports/experiment-highscores.html
-    snakewebcode/activity/reports/experiment-highscores.js
-    snakewebcode/entity/ExperimentStatus.py
     snakewebcode/interface/DbMgr.py
-    snakewebcode/interface/GitPublisher.py
+    snakewebcode/interface/SnakeLab.py
     snakewebcode/interface/StaticPublisher.py
     snakewebcode/interface/GIFAnimation.py
+)
+# Remove only retired application code on upgrade; persistent data lives elsewhere.
+retired_files=(
+    activity/PublishStatus.py activity/DailyProgress.py activity/TopRuns.py
+    activity/GoldenHistory.py activity/GoldenConfigurations.py activity/RunScoreHistory.py
+    activity/HighscoreHistory.py activity/EventLogExport.py activity/SimulationBoard.py
+    activity/homepage.html interface/GitPublisher.py
+    constants/PublicEvents.py constants/ReportLabels.py
 )
 for source_file in "${code_files[@]}" requirements.txt scripts/provision-database.py systemd/snake-web.service systemd/snake-web.env; do
     [[ -f ${source_dir}/${source_file} ]] || fail "Missing source file: ${source_file}"
 done
 
-for directory in /etc "${config_dir}" /var/lib "${service_home}" /opt /opt/prod "${install_dir}" "${install_dir}/snakewebcode" "${install_dir}/snakewebcode/constants" "${install_dir}/snakewebcode/activity" "${install_dir}/snakewebcode/activity/reports" "${install_dir}/snakewebcode/entity" "${install_dir}/snakewebcode/interface" "${install_dir}/venv"; do
+for directory in /etc "${config_dir}" /var/lib "${service_home}" /opt /opt/prod "${install_dir}" "${install_dir}/snakewebcode" "${install_dir}/snakewebcode/constants" "${install_dir}/snakewebcode/activity" "${install_dir}/snakewebcode/activity/fonts" "${install_dir}/snakewebcode/activity/reports" "${install_dir}/snakewebcode/entity" "${install_dir}/snakewebcode/interface" "${install_dir}/venv"; do
     [[ ! -L ${directory} ]] || fail "Refusing symlink: ${directory}"
     [[ ! -e ${directory} || -d ${directory} ]] || fail "Not a directory: ${directory}"
 done
@@ -108,10 +87,6 @@ done
 
 [[ ! -L ${environment_file} ]] || fail "Refusing symlink: ${environment_file}"
 [[ ! -e ${environment_file} || -f ${environment_file} ]] || fail "Not a regular file: ${environment_file}"
-if [[ ! -e ${environment_file} ]]; then
-    [[ ! -L ${legacy_environment_file} ]] || fail "Refusing symlink: ${legacy_environment_file}"
-    [[ ! -e ${legacy_environment_file} || -f ${legacy_environment_file} ]] || fail "Not a regular file: ${legacy_environment_file}"
-fi
 
 if account=$(getent passwd "${service_user}"); then
     IFS=: read -r name password uid gid comment account_home account_shell <<< "${account}"
@@ -140,15 +115,15 @@ for relative in "${code_files[@]}" requirements.txt; do
 done
 install -d -m 0700 -o root -g root "${config_dir}"
 if [[ ! -e ${environment_file} ]]; then
-    if [[ -f ${legacy_environment_file} ]]; then
-        install -m 0600 -o root -g root "${legacy_environment_file}" "${environment_file}"
-    else
-        install -m 0600 -o root -g root "${source_dir}/systemd/snake-web.env" "${environment_file}"
-    fi
+    install -m 0600 -o root -g root "${source_dir}/systemd/snake-web.env" "${environment_file}"
 fi
 /usr/bin/python3 -m venv "${install_dir}/venv"
 "${install_dir}/venv/bin/python" -m pip install -r "${install_dir}/requirements.txt"
 "${install_dir}/venv/bin/python" "${source_dir}/scripts/provision-database.py"
+for relative in "${retired_files[@]}"; do
+    rm -f -- "${install_dir}/snakewebcode/${relative}"
+done
+rm -rf -- "${install_dir}/snakewebcode/activity/reports" "${install_dir}/snakewebcode/entity"
 install -m 0644 -o root -g root "${source_dir}/systemd/snake-web.service" "${unit_path}"
 systemctl daemon-reload
 systemctl enable snake-web.service
