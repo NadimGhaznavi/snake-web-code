@@ -39,7 +39,7 @@ def read_daily_state(content):
     return state
 
 
-def export_daily_games(appdb, publisher, snake=None):
+def export_daily_games(appdb, publisher, snake=None, *, limit=DSnakeWebCode.DAILY_GAME_LIMIT):
     day = appdb.get_daily_game_day()
     previous = read_daily_state(publisher.read_history(publisher.DAILY_PATH))
     cache = {}
@@ -71,7 +71,7 @@ def export_daily_games(appdb, publisher, snake=None):
             continue  # Legacy SVG-only games never qualify.
         files[publisher.DAILY_GIF_PATHS[len(games)]] = animation
         games.append(game)
-        if len(games) == DSnakeWebCode.DAILY_GAME_LIMIT:
+        if len(games) == limit:
             break
     state = dict(version=1, day=day.isoformat(), renderer=SimulationAnimation.VERSION,
                  duration_ms=DURATION_MS, games=games)

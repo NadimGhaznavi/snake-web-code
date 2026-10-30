@@ -8,17 +8,17 @@ import signal
 import threading
 
 from snakewebcode.activity.AppDb import AppDb
-from snakewebcode.activity.PublishStatus import PublishStatus
+from snakewebcode.activity.PublishLive import PublishLive
 from snakewebcode.interface.DbMgr import DbMgr
-from snakewebcode.interface.GitPublisher import GitPublisher
+from snakewebcode.interface.StaticPublisher import StaticPublisher
 
 
-def publish_once(*, collect_progress=True) -> str:
+def publish_once() -> str:
     with DbMgr() as db:
-        return PublishStatus(
+        return PublishLive(
             AppDb(db),
-            GitPublisher(os.environ["PUBLISH_CHECKOUT"], os.environ.get("PUBLISH_BRANCH", "main")),
-        ).run(collect_progress=collect_progress)
+            StaticPublisher(os.environ.get('PUBLISH_DIRECTORY', '/var/lib/snake-web/public')),
+        ).run()
 
 
 def seconds_until_next_publish(now: datetime) -> float:
@@ -42,7 +42,7 @@ def main() -> int:
         if not args.once and stopped.wait(seconds_until_next_publish(datetime.now())):
             break
         try:
-            logging.info(publish_once(collect_progress=False) if args.once else publish_once())
+            logging.info(publish_once())
         except Exception as exc:
             logging.error("Status publishing failed: %s", exc)
             if args.once:

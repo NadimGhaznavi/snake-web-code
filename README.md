@@ -1,16 +1,13 @@
 # SnakeWebCode
 
-Python service that publishes Snake Lab scores, Ax3l experiment status, and a
-daily high-score game GIFs to the
-[Snake Web website](https://github.com/NadimGhaznavi/snake-web).
-Application code, deployment scripts, DevOps documentation, and tests live here; website pages and
-Jekyll configuration live in `snake-web`.
+Python service that writes today's top five captured Snake games and an animated
+score distribution to static files served by Caddy at `https://snake.osoyalce.com`.
+The [Snake Web website](https://github.com/NadimGhaznavi/snake-web) contains the
+maintained page and navigation script; routine experiment updates never use Git.
 
 ## Development
 
 Read the [Coding Guidelines](pages/coding-guidelines.md) before making changes.
-
-Run from the `snake-web-code` checkout:
 
 ```sh
 python3 -m venv .venv
@@ -18,197 +15,54 @@ python3 -m venv .venv
 .venv/bin/python -m unittest discover -s tests -v
 ```
 
+## Publication
+
+The service publishes on the hour and half hour, starting at the next boundary
+after startup. `--once` publishes immediately using the same selection and renderer.
+Set `PUBLISH_DIRECTORY` (default `/var/lib/snake-web/public`) to the Caddy document
+root. See [static publishing](docs/devops/static-publishing.md) for the one-time
+website and Caddy setup, permissions, and cache controls.
+
+Games are named `game-one.gif` through `game-five.gif`. Only simulations completed
+on the source database's current UTC day qualify, ordered by high score descending
+and numeric simulation ID ascending for ties. Unscored, incomplete, and legacy
+SVG-only games are excluded; zero scores qualify. If fewer than five captures
+exist, only those files are published. Midnight UTC starts a new ranking on the
+next publication pass; there is no backfill from earlier days.
+
+Game drawing follows Ax3l, using the BMForge GIF encoder with Pillow 12.3.0, including its labels, digestion effect,
+75 ms moves, and one-second final pause. Capture retrieval uses Snake Lab's
+version-1 `simulation.highscore_frames` ZMQ contract. Configure `SNAKE_LAB_ENDPOINT`
+if it differs from `tcp://127.0.0.1:41970`.
+
+Unchanged games reuse their saved GIFs, including after restarts and rank changes.
+During capture-service outages, available cached leaders for the current day remain
+published; missing captures are retried on the next pass. Renderer upgrades
+regenerate captures. The publisher removes unused game slots, locks concurrent
+publication, and replaces each file atomically. It invalidates `live.json` before changing slots and writes it last, so an
+interrupted write triggers fresh rendering on the next pass.
+A failed pass returns nonzero with `--once` or logs an error and retries later.
+Unchanged publications retain the existing files and update time.
+
+`score-distribution.gif` uses Ax3l's Pillow renderer: an empty plot, cumulative
+checkpoints every 500 simulation IDs for two seconds each, then all simulations
+for five seconds. The final distribution fixes both axes for every frame. Missing
+IDs retain their checkpoint boundaries; null scores count as submitted but have
+no bars, and zero is scored. The histogram includes the whole experiment, including
+current scores for runs still in progress. Each pass renders the current distribution; identical bytes are left untouched.
+
+The minimal website displays **Ax3l Live**, **LLM configured Snake AI**, the latest
+publication time in Toronto (`YYYY-MM-DD HH:MM`), one game with wrapping arrows,
+and the histogram. Reload to refresh. The page fetches `live.json` without caching;
+GIF responses use `Cache-Control: no-store`. Zero games leave an empty viewer;
+one game disables both arrows. Images retain their natural size and shrink on
+narrow screens. No database, Python server, or Git push serves browser requests.
+
 ## Deployment
 
-Run `sudo scripts/install.sh` or `sudo scripts/upgrade.sh` from this checkout.
-The installed service lives at `/opt/prod/snakewebcode` and publishes to a
-separate `snake-web` checkout configured with `PUBLISH_CHECKOUT`.
+Run `sudo scripts/install.sh` or `sudo scripts/upgrade.sh` from a deployment
+checkout. The installed service lives at `/opt/prod/snakewebcode`.
 
-See the [installation guide](docs/devops/install.md)
-and [upgrade guide](docs/devops/upgrade.md)
-for configuration and deployment details.
-
-See [DevOps documentation](docs/devops/index.md) for all operational guides and coding guidelines.
-
-Register `SnakeWebCode` in CMDB to discover installed releases. See
-[CMDB discovery](docs/devops/cmdb-discovery.md) for metadata and verification.
-
-## Daily games homepage
-
-The homepage follows Ax3l's dark bordered Status/Reports/game layout, headed
-**Live Ax3l Experiment Data**. **Top 10 Daily Games** shows captured games only,
-with wrapping back/forward buttons and the simulation ID and high score
-embedded above the game in each GIF. No qualifying games leave a blank viewer; one game disables both arrows.
-The panels stack on narrow screens. The daily progress chart sits beneath the
-game controls inside Top 10 Daily Games, with a border matching the game GIF's
-width and color. Last Updated and
-Visits share a bordered footer at the bottom.
-
-Each publication pass searches simulations completed that day, ranked by score
-descending and numeric simulation ID ascending for ties. The source database's
-UTC date defines the day, matching Snake Lab's UTC completion timestamps. Incomplete,
-unscored, and legacy SVG-only simulations are excluded; zero scores qualify.
-There is no backfill or special rollout data handling.
-
-`reports/data/daily-games.json` records the day, up to ten leaders' numeric IDs,
-run UUIDs and scores, plus renderer version and duration. Captures are retrieved
-through Snake Lab's `simulation.highscore_frames` ZMQ method, following Ax3l's
-version-1 protocol and frame validation. Set `SNAKE_LAB_ENDPOINT` to override the
-default `tcp://127.0.0.1:41970`; the deployed publisher must reach the control service.
-No new database grant or source-schema change is required.
-
-GIF rendering matches Ax3l: 75 ms moves, animated food digestion, a one-second
-final pause, and continuous looping. Each GIF includes a border in the website
-colors, a two-line simulation/high-score heading, and a right-aligned current
-score below the board. The monospace score field reserves at least two character
-positions so its label stays still as the score grows. The bundled DejaVu Sans
-Mono font keeps rendering consistent across hosts. Up to ten GIF slots are published under
-`reports/games/daily-1.gif` through `reports/games/daily-10.gif`. Unchanged leaders reuse their saved bytes, even
-after restarts or failed pushes; renderer changes regenerate captures. Image URLs
-include the run UUID, score and renderer version to refresh browser caches when
-slots change. Unused slots may remain on disk but are never displayed.
-
-JSON, GIFs, navigation script and homepage share the same publication commit.
-Atomic file replacement and the existing publisher lock protect writes; a failed
-push retries the committed state. A capture-service outage retains available
-cached leaders for the current day and retries discovery on the next pass.
-On a new day, the next publication replaces the rankings, including an empty
-list when no captured games qualify. The static site updates at publication time.
-
-## Daily configuration progress
-
-Each half-hour publication saves the ten highest-scoring completed configurations
-for that source-database day, including results without game captures. Ties favor
-the lower simulation ID; null scores and incomplete runs are excluded, while zero
-qualifies. The GIF uses ten slots ordered from lowest score on the left to highest
-on the right, with simulation IDs and scores above a common zero-based axis.
-
-`reports/data/daily-progress.json` saves observations and
-`reports/games/daily-progress.gif` animates them. Frames pause for two seconds,
-with five seconds on the last frame. A complete day has 48 frames and a 99-second
-loop. Midnight UTC closes the preceding day's final interval; the 00:30 UTC
-observation starts a fresh day. The database session uses UTC, matching Snake Lab's
-completion timestamps and defining days and slots. Repeated passes in one slot
-reuse its saved observation and GIF.
-Manual `--once` / `push-now` publications refresh the site without collecting
-chart observations. They reuse the saved animation, including across day rollover;
-before the first scheduled collection, the chart is blank. Saved frames can still
-be rendered again when a renderer upgrade or missing GIF requires it.
-
-Collection starts with the current ranking; earlier frames are never backfilled.
-Partial days and missed publications show only actual observations; their
-collection timestamps appear in Toronto time inside each GIF frame as
-`DD Mon YYYY - HH:MM`. New JSON observations include the UTC offset; older saved
-observations retain their original local timestamps and rankings. The JSON, GIF
-and homepage share a commit and survive restarts and
-failed pushes. Renderer upgrades regenerate from saved observations.
-
-## Static report slice
-
-Top 100 displays the saved boards for up to 100 scored simulations, ordered by
-high score descending and numeric run ID ascending for ties. Navigation below
-each board wraps between the first and last available rank. The run label uses
-the simulation's numeric ID, not its rank. Missing boards show a placeholder;
-zero scores remain eligible and unscored runs are excluded. Each publication
-refreshes this report, using the existing simulation read grant.
-
-Ax3l's Thinking uses that same ranked list and publication pass, displaying the
-first-choice `message.reasoning_content` from the response associated with each
-simulation's first successful submission tool event. It keeps the same run/score
-navigation, including a placeholder for runs without saved reasoning. Only the
-reasoning text is exported, with line breaks preserved and HTML rendered as
-literal text. Existing Ax3l event read grants cover this lookup.
-
-The homepage links to Experiment Highscores. Each publishing pass reads the
-published CSV after synchronizing the site checkout, queries accepted scores
-with a newer event ID, and appends them. The first pass exports the full accepted
-score history. The browser fetches the static CSV and draws a Plotly spline plot
-with hover and keyboard details, preserving lower scores after seed changes.
-Plotly loads from its version-pinned CDN; smoothing changes only the connecting
-line, while markers and CSV data retain the recorded scores.
-
-Only event ID, simulation count, score, and seed are exported. Event-log payloads
-and their sanitization are outside this slice. Export, report assets, and homepage
-share one publication commit; failed pushes retry without duplicating records.
-The service publishes on the hour and half hour in the server's local timezone,
-starting at the next boundary after startup. It does not poll the database
-between scheduled passes. `--once` still publishes immediately; unchanged
-content does not create a new commit.
-
-Upgrade provisioning adds SELECT access to `ax3l.experiment_highscores`.
-The CSV assumes one continuous Ax3l database history with immutable accepted-score
-records; replacing/resetting that database requires deliberately starting a new
-export. Do not reuse an old CSV with reset event IDs.
-
-The Score Distribution Histogram compares all scored runs with the oldest two-thirds
-and oldest third of submitted runs, matching Ax3l's shared bins with one bar per integer score.
-The cumulative cohort boundaries include unscored runs and round down; null scores
-are then excluded from bar counts. Zero remains a valid score.
-Plotly renders the precomputed bins as overlapping blue, orange, and muted-red bars, with
-hover counts and arrow-key navigation. It uses the same version-pinned CDN as
-Experiment Highscores.
-
-`reports/data/run-scores.csv` contains only numeric run IDs and nullable scores.
-Because scores change while runs execute, each pass compares the database's
-ID/score projection with the last exported observation for each run. New runs
-and changed scores append observations; the browser uses the latest observation
-per ID and orders runs by ID. Repeated publication does not duplicate records.
-This reads all run IDs/scores each pass because the source has no score-change
-cursor. The existing simulation table grant suffices; no new grant is needed.
-
-The Golden Configurations table publishes every golden creation (initial/seed
-baselines and promotions) in `reports/data/golden-configurations.csv`. New event
-IDs append once; the browser displays newest timestamps first. Fields are event
-ID, timestamp, run ID, score, formatted parameter/change, and only the first
-choice's `message.reasoning_content`. Full responses, tool payloads, and raw
-decision messages are not exported. The Config column's JSON link opens a
-formatted configuration page; the Reason column's Thoughts link opens the
-preserved multiline reasoning. Both detail views use matching report boxes
-and a Back link. Configuration exports include all golden run IDs, including
-baselines without a retained simulation-submission event. Existing read grants
-cover this report.
-
-## Sanitized Event Log
-
-The homepage's Event Log link opens a static, searchable report with category
-and event filters and 100 entries per page. The export includes the entire
-retained history, not only the last 500 events. Its explicit event allowlist is:
-
-- SnakeLab / Simulation Completed
-- Configuration / Golden Retained
-- Conversation / Prompt
-- Conversation / Response
-- SnakeLab / Simulation Submitted
-
-Prompts retain text and embedded PNGs; JSON text is pretty-printed in preformatted
-blocks. Responses publish only first-choice `message.reasoning_content` and
-numeric usage/timing metrics, including nested numeric counts. The reasoning
-appears first; response envelopes, choices, assistant content, and tool-call
-arguments are absent from the CSV as well as the page. Remaining event messages
-and the displayed event metadata are retained. Text is rendered as text, never HTML.
-
-Simulation Run details show the saved board, run ID, project version, high score,
-and completion time. Submitted-configuration details use the explicit numeric
-configuration schema. Both have Home and Event Log links. Provisioning adds
-SELECT on `snakelab.configurations`; it does not change the source schema.
-
-The managed files are `reports/event-log.html`, `reports/event-detail.html`,
-`reports/event-log.js`, `reports/report-csv.js`, `reports/data/events.csv`,
-`reports/data/event-simulations.csv`, and `reports/data/event-export.json`.
-The versioned cursor records the highest source event examined, including
-excluded types. Event queries use batches of 250 and a snapshot upper bound;
-new retained events append once. Changed simulation details append observations,
-and the browser uses the latest observation per run. Export and cursor changes
-share the publication commit, so failed pushes can retry without duplicates.
-Malformed prompts fail the export without advancing the cursor. CSV fields
-larger than 64 MiB fail explicitly rather than being truncated.
-
-As with the other incremental exports, source records must retain their IDs and
-remain immutable. Resetting/replacing the source experiment requires a deliberate
-new export; a cursor ahead of the source is rejected. Changes to sanitization
-rules do not retroactively remove data from previously published files or Git
-history. Browser pagination limits rendered rows; it still downloads the complete
-CSV history. No live database-backed report service is required.
-
-To start fresh against a different source database, use the
-[site reset script](docs/devops/reset-site.md) to clear published data and cursors.
+See [DevOps documentation](docs/devops/index.md) for installation, upgrade,
+publication, and CMDB discovery. The project owner handles production rollout.
+Existing website clones, credentials, and old exports are preserved on upgrade.

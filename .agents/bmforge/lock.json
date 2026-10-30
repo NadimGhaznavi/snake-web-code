@@ -1,0 +1,15 @@
+{
+  "branch": "main",
+  "manager_sha256": "0adce54d50c5d55b23e592f2e32248add52706c2ab575760e1083057a2af2bef",
+  "mode": "attached",
+  "repository": "/home/dan/.cache/bmforge-upstream",
+  "schema": 1,
+  "skills": {
+    "bmforge-gif-animation": {
+      "sha256": "34b5340f2f76198e4356b23edf728ae6faaf3742981f22939769ead97fe8c709",
+      "source_commit": "7817daa5bdec5e3f562b73510bec6a13afccbaa6",
+      "spec_version": "0.1.0"
+    }
+  },
+  "source_commit": "7817daa5bdec5e3f562b73510bec6a13afccbaa6"
+}

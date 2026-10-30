@@ -1,5 +1,8 @@
 # Start a fresh published experiment
 
+This tool applies only to old Git-based exports. For the Caddy publisher, see
+[static publishing](static-publishing.md); never point this tool at its public directory.
+
 Use `scripts/reset-site.py` from the snake-web-code checkout to clear the
 **snake-web website repository's generated experiment data** before moving to a
 new source database. The script uses standard Python only.

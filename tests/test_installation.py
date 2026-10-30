@@ -125,11 +125,14 @@ class InstallationTests(unittest.TestCase):
         cursor = self.home / "site/reports/data/event-export.json"
         cursor.parent.mkdir(parents=True)
         cursor.write_text('{"last_event_id":123}\n')
+        public = self.home / 'public/game-one.gif'
+        public.parent.mkdir()
+        public.write_bytes(b'GIF89a saved public artifact')
         legacy = self.root / "opt/prod/snake-web/old-code"
         legacy.parent.mkdir(parents=True)
         legacy.write_text("previous installation\n")
         saved = {path: (path.read_bytes(), path.stat().st_mode) for path in
-                 (environment, credentials, key, cursor, legacy)}
+                 (environment, credentials, key, cursor, public, legacy)}
         constants.write_text('VERSION = "old"\n')
         result = self.run_script("upgrade.sh")
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)

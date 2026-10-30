@@ -6,10 +6,10 @@ usage() {
     cat <<EOF
 Usage: sudo $0
 
-Generate and push current website content immediately, using the installed
+Generate and replace current public GIFs and metadata immediately, using the installed
 code in /opt/prod/snakewebcode and configuration in /etc/snake-web.
 Runs as snake-web, displays publishing output, and returns its exit status.
-Leaves the scheduled service running. Unchanged content creates no new commit.
+Leaves the scheduled service running. Unchanged files are reused.
 If another publication is in progress, wait for it to finish and rerun.
 EOF
 }
@@ -33,7 +33,6 @@ exec systemd-run --wait --pipe --collect \
     --setenv=HOME=/var/lib/snake-web \
     --setenv=PYTHONUNBUFFERED=1 \
     --setenv=PYTHONDONTWRITEBYTECODE=1 \
-    --setenv=GIT_TERMINAL_PROMPT=0 \
     --property=EnvironmentFile=/etc/snake-web/snake-web.env \
     --property=EnvironmentFile=/etc/snake-web/database.env \
     --property=NoNewPrivileges=true \
