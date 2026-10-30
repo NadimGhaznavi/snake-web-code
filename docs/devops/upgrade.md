@@ -28,3 +28,7 @@ and public artifacts. The reader has SELECT access only to
 
 Configure the database and publisher as described in [Install Snake Web](install.md)
 and prepare [Caddy access](static-publishing.md) before the first publishing run.
+
+For the release introducing the neuromancer LAN server, run
+[the separate Caddy setup](neuromancer-deployment.md) after upgrading. Application
+upgrades do not install or reload Caddy.
