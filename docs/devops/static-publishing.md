@@ -56,6 +56,9 @@ and [HTTP cache controls](https://developer.mozilla.org/en-US/docs/Web/HTTP/Refe
 
 ## Upgrade from Git publication
 
+For the inspected wintermute host with Snake Web 5 already installed, use the
+[one-time deployment script](wintermute-deployment.md).
+
 Review the release, production host, and source database before rollout. Upgrading
 restarts the publisher. Set the public directory and prepare Caddy access first.
 Old `PUBLISH_CHECKOUT`, `PUBLISH_BRANCH`, and Git SSH settings are ignored by the
