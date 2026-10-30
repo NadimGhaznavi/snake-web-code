@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+This release is named for the element **Thorium (Th)**. Thorium is more abundant 
+in Earth's crust than uranium and is being researched as a potential nuclear fuel.
+
+### Added
+
+- Add a manual neuromancer setup script that installs Caddy and an imported LAN
+  artifact site behind wintermute's HTTPS proxy, with configuration backups,
+  restricted file access, validation, and HTTP checks.
+
 ## [5.0.3] - 2026-10-30 @ 02:19
 
 This release is named for the element **Bismuth (Bi)**. Bismuth can form spectacular 

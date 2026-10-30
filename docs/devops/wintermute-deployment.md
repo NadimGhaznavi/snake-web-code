@@ -1,5 +1,10 @@
 # One-time wintermute deployment
 
+This is the former single-host setup, with publisher and Caddy both on wintermute.
+For the current publisher on neuromancer behind wintermute's reverse proxy, use
+[the neuromancer deployment](neuromancer-deployment.md) instead. Do not run this
+script for the two-host setup.
+
 Configure Snake Web's Caddy site on wintermute after installing the static
 publisher. The script preserves MyCount's existing Caddy site and uses the
 host's current port 80/443 router mappings.

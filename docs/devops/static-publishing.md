@@ -18,11 +18,12 @@ Subsequent experiment updates modify only the Caddy-served files.
 
 ## Caddy
 
-Keep the dynamic DNS mapping and inbound ports 80/443 pointed at the production
-host. Merge [the supplied site block](../../systemd/Caddyfile.snake) into the
-existing Caddy configuration, adapting its root if necessary. Do not replace
-unrelated site blocks. The block serves only the six known GIF paths and
-`live.json`; other paths return 404. It sets `Cache-Control: no-store` and permits
+Public HTTPS terminates on wintermute, where DNS and router ports 80/443 point.
+Its Snake site reverse-proxies to Caddy on neuromancer at `192.168.0.106:8080`.
+Use [the neuromancer setup script](neuromancer-deployment.md) to install the
+[LAN site block](../../systemd/Caddyfile.snake-neuromancer) as a separate imported
+configuration, preserving unrelated sites. The block serves only the six known
+GIF paths and `live.json`; other paths return 404. It sets `Cache-Control: no-store` and permits
 metadata requests from `https://snakeweb.osoyalce.com` through CORS.
 
 The default service home has mode `0750`. Grant the Caddy account traversal of
@@ -41,7 +42,7 @@ Validate the complete merged configuration before reloading it:
 
 ```sh
 sudo caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
-sudo systemctl reload caddy
+sudo caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile
 ```
 
 `no-store` instructs browsers and intermediary caches not to store responses.
