@@ -68,7 +68,6 @@ checkout. The installed service lives at `/opt/prod/snakewebcode`.
 
 See [DevOps documentation](docs/devops/index.md) for installation, upgrade,
 publication, and CMDB discovery. The project owner handles production rollout.
-Existing website clones, credentials, and old exports are preserved on upgrade.
-
-Upgrades remove retired report/Git-publisher code and restrict the dedicated
-database reader to SELECT on `snakelab.simulation_runs`.
+Upgrades replace the installed Python package and preserve configuration,
+credentials, and publication data. The dedicated database reader has SELECT
+access only to `snakelab.simulation_runs`.

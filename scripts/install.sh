@@ -37,8 +37,10 @@ if [[ $# == 1 && ( $1 == --help || $1 == -h ) ]]; then
 fi
 [[ $# == 0 ]] || { usage >&2; exit 2; }
 [[ ${EUID} == 0 ]] || fail 'Run this installer as root.'
+# The service account must be able to read the virtual environment and dependencies.
+umask 022
 
-for command in getent groupadd useradd usermod install id systemctl mariadb; do
+for command in getent groupadd useradd install id systemctl mariadb; do
     command -v "${command}" >/dev/null || fail "Required command not found: ${command}"
 done
 [[ -x /bin/bash ]] || fail 'Missing /bin/bash.'
@@ -61,27 +63,17 @@ code_files=(
     snakewebcode/interface/StaticPublisher.py
     snakewebcode/interface/GIFAnimation.py
 )
-# Remove only retired application code on upgrade; persistent data lives elsewhere.
-retired_files=(
-    activity/PublishStatus.py activity/DailyProgress.py activity/TopRuns.py
-    activity/GoldenHistory.py activity/GoldenConfigurations.py activity/RunScoreHistory.py
-    activity/HighscoreHistory.py activity/EventLogExport.py activity/SimulationBoard.py
-    activity/homepage.html interface/GitPublisher.py
-    constants/PublicEvents.py constants/ReportLabels.py
-)
 for source_file in "${code_files[@]}" requirements.txt scripts/provision-database.py systemd/snake-web.service systemd/snake-web.env; do
     [[ -f ${source_dir}/${source_file} ]] || fail "Missing source file: ${source_file}"
 done
 
-for directory in /etc "${config_dir}" /var/lib "${service_home}" /opt /opt/prod "${install_dir}" "${install_dir}/snakewebcode" "${install_dir}/snakewebcode/constants" "${install_dir}/snakewebcode/activity" "${install_dir}/snakewebcode/activity/fonts" "${install_dir}/snakewebcode/activity/reports" "${install_dir}/snakewebcode/entity" "${install_dir}/snakewebcode/interface" "${install_dir}/venv"; do
+for directory in /etc "${config_dir}" /var/lib "${service_home}" /opt /opt/prod "${install_dir}" "${install_dir}/snakewebcode" "${install_dir}/venv"; do
     [[ ! -L ${directory} ]] || fail "Refusing symlink: ${directory}"
     [[ ! -e ${directory} || -d ${directory} ]] || fail "Not a directory: ${directory}"
 done
-for relative in "${code_files[@]}" requirements.txt; do
-    destination="${install_dir}/${relative}"
-    [[ ! -L ${destination} ]] || fail "Refusing symlink: ${destination}"
-    [[ ! -e ${destination} || -f ${destination} ]] || fail "Not a regular file: ${destination}"
-done
+requirements_file="${install_dir}/requirements.txt"
+[[ ! -L ${requirements_file} ]] || fail "Refusing symlink: ${requirements_file}"
+[[ ! -e ${requirements_file} || -f ${requirements_file} ]] || fail "Not a regular file: ${requirements_file}"
 [[ ! -L ${unit_path} ]] || fail "Refusing symlink: ${unit_path}"
 [[ ! -e ${unit_path} || -f ${unit_path} ]] || fail "Not a regular file: ${unit_path}"
 
@@ -92,11 +84,8 @@ if account=$(getent passwd "${service_user}"); then
     IFS=: read -r name password uid gid comment account_home account_shell <<< "${account}"
     [[ ${uid} != 0 ]] || fail 'The service account must not be root.'
     [[ ${account_home} == "${service_home}" ]] || fail "Existing account home must be ${service_home}."
-    [[ ${account_shell} == /bin/bash || ${account_shell} == /usr/sbin/nologin ]] || fail 'Existing account must use /bin/bash or /usr/sbin/nologin.'
+    [[ ${account_shell} == /bin/bash ]] || fail 'Existing account must use /bin/bash.'
     [[ $(id -gn "${service_user}") == "${service_user}" ]] || fail "Existing account primary group must be ${service_user}."
-    if [[ ${account_shell} == /usr/sbin/nologin ]]; then
-        usermod --shell /bin/bash "${service_user}"
-    fi
 else
     if ! getent group "${service_user}" >/dev/null; then
         groupadd --system "${service_user}"
@@ -110,20 +99,19 @@ if [[ ! -d /opt/prod ]]; then
     install -d -m 0755 -o root -g root /opt/prod
 fi
 install -d -m 0755 -o root -g root "${install_dir}"
-for relative in "${code_files[@]}" requirements.txt; do
-    install -D -m 0644 -o root -g root "${source_dir}/${relative}" "${install_dir}/${relative}"
-done
+install -m 0644 -o root -g root "${source_dir}/requirements.txt" "${requirements_file}"
 install -d -m 0700 -o root -g root "${config_dir}"
 if [[ ! -e ${environment_file} ]]; then
     install -m 0600 -o root -g root "${source_dir}/systemd/snake-web.env" "${environment_file}"
 fi
 /usr/bin/python3 -m venv "${install_dir}/venv"
-"${install_dir}/venv/bin/python" -m pip install -r "${install_dir}/requirements.txt"
+"${install_dir}/venv/bin/python" -m pip install -r "${requirements_file}"
 "${install_dir}/venv/bin/python" "${source_dir}/scripts/provision-database.py"
-for relative in "${retired_files[@]}"; do
-    rm -f -- "${install_dir}/snakewebcode/${relative}"
+# Replace application code completely; configuration and publication data live elsewhere.
+rm -rf --one-file-system -- "${install_dir}/snakewebcode"
+for relative in "${code_files[@]}"; do
+    install -D -m 0644 -o root -g root "${source_dir}/${relative}" "${install_dir}/${relative}"
 done
-rm -rf -- "${install_dir}/snakewebcode/activity/reports" "${install_dir}/snakewebcode/entity"
 install -m 0644 -o root -g root "${source_dir}/systemd/snake-web.service" "${unit_path}"
 systemctl daemon-reload
 systemctl enable snake-web.service

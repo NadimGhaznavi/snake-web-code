@@ -36,12 +36,12 @@ Root-only configuration lives under `/etc/snake-web` (directory mode `0700`):
   saved password and repairs only the dedicated reader's SELECT grants.
 - `snake-web.env`: publication settings, mode `0600`, preserved on upgrade.
 
-The provisioner grants SELECT only on `snakelab.simulation_runs`. On upgrade it
-removes obsolete grants from this dedicated reader while preserving its password.
-It does not alter source schemas or application accounts. The installer also
-removes retired report and Git-publisher code from the installed package, leaving
-public artifacts and saved website checkouts intact. If provisioning fails,
-code may already have been copied; inspect the failure before retrying.
+The provisioner enforces SELECT-only access to `snakelab.simulation_runs` for the
+dedicated reader, preserving its saved password. It does not alter source schemas
+or application accounts. After provisioning succeeds, the installer replaces the
+Python package with the release's files. If provisioning fails, the existing
+Python package and service unit stay in place, but the virtual environment may
+already have changed; inspect the failure before retrying.
 
 ## Configure publication
 

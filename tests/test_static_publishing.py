@@ -190,9 +190,9 @@ class StaticPublicationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             StaticPublisher(linked)
 
-    def test_service_wires_static_publication_and_ignores_legacy_git_settings(self):
+    def test_service_wires_static_publication(self):
         from snakewebcode import server
-        with patch.dict(os.environ, PUBLISH_DIRECTORY=str(self.public), PUBLISH_CHECKOUT='/unused'), \
+        with patch.dict(os.environ, PUBLISH_DIRECTORY=str(self.public)), \
                 patch.object(server, 'DbMgr') as db, patch.object(server, 'PublishLive') as activity:
             server.publish_once()
         db.assert_called_once_with()

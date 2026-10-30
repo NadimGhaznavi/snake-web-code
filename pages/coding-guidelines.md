@@ -123,9 +123,9 @@ and credential files MUST have restrictive permissions. Maintenance requires
 root; the running publisher uses its dedicated account and read-only DB access.
 
 Confirm the intended host and configured source before production work. An
-installer can copy code before provisioning fails; report partial installation
-accurately. Do not bypass missing source schemas or restart a service the owner
-has deliberately stopped without authorization. Follow the
+installer can update dependencies before provisioning fails; report partial
+installation accurately. Do not bypass missing source schemas or restart a service
+the owner has deliberately stopped without authorization. Follow the
 [installation](../docs/devops/install.md), [upgrade](../docs/devops/upgrade.md),
 and [immediate publication](../docs/devops/push-now.md) guides.
 
