@@ -8,7 +8,7 @@ class DSnakeWebCode:
     CMDB_SUPPLIER: Final[str] = "Nadim-Daniel"
     CMDB_CODENAME: Final[str] = "Sulfur"
     CMDB_COMPONENTS: Final[tuple[tuple[str, str], ...]] = (
-        ("Published Website", "/var/lib/snake-web/site"),
+        ("Public Artifacts", "/var/lib/snake-web/public"),
     )
     CMDB_DATABASES: Final[tuple[tuple[str, str], ...]] = (
         ("Snake Lab", "snakelab"),

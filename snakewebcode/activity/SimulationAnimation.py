@@ -1,14 +1,15 @@
 """Render validated Snake Lab game frames as a looping GIF."""
 
-from io import BytesIO
 from collections.abc import Iterator
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
+from snakewebcode.interface.GIFAnimation import GIFAnimation
+
 
 class SimulationAnimation:
-    VERSION = 7
+    VERSION = 8
     FINAL_FRAME_DURATION_MS = 1000
     FOOD_FRAME_DURATION_MS = 50
     CELL_SIZE = 32
@@ -25,24 +26,14 @@ class SimulationAnimation:
         font = ImageFont.truetype(str(Path(__file__).with_name('fonts') / 'DejaVuSansMono.ttf'),
                                   cls.FONT_SIZE)
         high_score = frames[-1]['board']['score']
-        images = cls._gif_timing(cls._panel(image, simulation_id, high_score, font)
-                                for image in cls._images(frames, duration_ms))
+        images = (cls._panel(image, simulation_id, high_score, font)
+                  for image in cls._images(frames, duration_ms))
         first = next(images)
-        with BytesIO() as output:
-            first.save(output, format="GIF", save_all=True, append_images=images,
-                       loop=0, disposal=1, optimize=False)
-            return output.getvalue()
-
-    @staticmethod
-    def _gif_timing(images: Iterator[Image.Image]) -> Iterator[Image.Image]:
-        """Round cumulative time to GIF ticks without accumulating timing drift."""
-        elapsed_ms = encoded_ms = 0
+        animation = GIFAnimation(*first.size)
+        animation.add_frame(first, duration_ms=first.info['duration'])
         for image in images:
-            elapsed_ms += image.info["duration"]
-            next_ms = ((elapsed_ms + 5) // 10) * 10
-            image.info["duration"] = next_ms - encoded_ms
-            encoded_ms = next_ms
-            yield image
+            animation.add_frame(image, duration_ms=image.info['duration'])
+        return animation.to_bytes()
 
     @classmethod
     def _images(cls, frames: list[dict], duration_ms: int) -> Iterator[Image.Image]:
@@ -54,7 +45,7 @@ class SimulationAnimation:
                 digestion_head = None
             if (previous is not None and board["score"] > previous["score"]
                     and board["snake_head"] == previous["food"]):
-                # Show the new food before digestion, delaying growth until the next move.
+                # Show replacement food before digestion, delaying only growth.
                 eating = {**board, "snake_body": board["snake_body"][:-1]}
                 image = cls._board(eating)
                 image.info["duration"] = duration_ms

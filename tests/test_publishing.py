@@ -492,7 +492,7 @@ class ServiceTests(unittest.TestCase):
             event.return_value.is_set.return_value = False
             self.assertEqual(server.main(), 0)
             event.return_value.wait.assert_not_called()
-            publish.assert_called_once_with(collect_progress=False)
+            publish.assert_called_once_with()
 
     def test_once_failure_returns_nonzero(self):
         with patch.object(sys, 'argv', ['snake-web', '--once']), \

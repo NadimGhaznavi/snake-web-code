@@ -18,8 +18,8 @@ Changes MUST follow the owner's architecture and requested scope. Preserve
 existing behavior unless the task requires changing it. Do not expand a task
 into an unrelated refactor.
 
-Snake Web publishes Snake Lab scores, Ax3l experiment status, sanitized reports,
-and captured daily games to a static website. This repository owns the Python
+Snake Web publishes captured daily Snake games and an Ax3l-compatible animated
+score distribution as static artifacts served by Caddy. This repository owns the Python
 publisher, its templates and report assets, deployment scripts, and tests.
 The separate `snake-web` repository owns website pages and Jekyll configuration.
 Snake Lab and Ax3l own simulation execution, optimization, and source schemas.
@@ -95,32 +95,38 @@ by broad exception handlers. Document any deliberate stale-cache behavior.
 
 ## Saved state and publication
 
-Publication MUST serialize access to its dedicated Git checkout and release
-locks reliably. Require the configured branch and a clean worktree; incorporate
-remote updates without discarding unrelated work. Refuse diverged histories and
-unrelated pending commits. Never force-push as part of routine publication.
+Static publication MUST serialize access to its public directory and release
+locks reliably. Publish only the managed GIFs and live metadata. Replace files
+atomically. Invalidate saved metadata before changing game slots and publish
+new metadata last, so interrupted writes trigger fresh rendering. Retry
+failed passes without reporting success or mutating source data.
 
-Publish only managed paths. Related homepage, report, data, cursor, and GIF
-updates MUST share a commit. Replace saved files atomically. Retry unpublished
-commits without duplicating records or falsely reporting a successful push.
+Keep the public directory separate from Git checkouts and private configuration.
+Routine publication MUST NOT commit or push artifacts. Caddy MUST serve GIFs and
+metadata with `Cache-Control: no-store` and allow the website origin to fetch the
+metadata. See [static publishing](../docs/devops/static-publishing.md).
 
-Incremental exports MUST preserve source ordering, nullable and zero scores,
-and cursor semantics. Source-history replacement requires the owner's deliberate
-reset workflow; do not silently backfill or reset cursors to hide discrepancies.
-Daily rankings use a JSON flat file and cached GIFs; legacy SVG-only results MUST
-remain excluded from the daily viewer. See the [project overview](../README.md)
-for the daily selection and cache contract.
+Daily rankings use the source database's UTC day. Exclude incomplete, unscored,
+and legacy SVG-only games; include zero scores. Reuse current-day GIFs during
+capture outages, remove unused slots, and start a new ranking at day rollover.
+Preserve Ax3l's game and cumulative histogram rendering. See the
+[project overview](../README.md) for selection and cache contracts.
+
+Retained legacy Git publication helpers still require a dedicated, serialized,
+clean checkout on the configured branch, managed-path commits, fast-forward
+remote synchronization, and failed-push retries. Never force-push routinely or
+reset old export cursors to conceal source-history replacement.
 
 ## Installation and production
 
 Installation deploys code to `/opt/prod/snakewebcode` and runs `snake-web.service`
 as the `snake-web` account. Configuration lives in `/etc/snake-web`; persistent
-state, SSH credentials, and the default publishing checkout live under
-`/var/lib/snake-web`. Keep development, deployment, and publishing checkouts separate.
+state, SSH credentials, and the default public artifacts live under
+`/var/lib/snake-web`. Keep development and deployment checkouts separate from public artifacts.
 
 Installation MUST deploy every required module, template, browser asset, and
 Python dependency. Upgrades and uninstallation MUST preserve configuration,
-credentials, the publishing checkout, and saved publication data. Configuration
+credentials, old publishing checkouts, and saved publication data. Configuration
 and credential files MUST have restrictive permissions. Maintenance requires
 root; the running publisher uses its dedicated account and read-only DB access.
 
@@ -149,8 +155,8 @@ contracts in one reference and link to it.
 
 Let the shared theme own website presentation where applicable and use GitHub
 Pages for website builds. Do not add a Gemfile, require local Jekyll builds,
-or commit generated site output to this code repository. Managed publication
-artifacts belong in the dedicated website checkout.
+or commit generated site output to this code repository. Public GIFs and live metadata belong in the configured Caddy document root;
+maintained website pages and scripts belong in the separate website repository.
 
 ## Verification and review
 
@@ -161,8 +167,9 @@ live website without the owner's authorization.
 
 Query and export changes MUST cover ordering, ties, null and zero scores,
 source boundaries, sanitization, cursor advancement, and repeated exports as
-applicable. Publication changes MUST cover unchanged content, failed-push retries,
-concurrency, remote advances, and refusal of dirty or diverged checkouts.
+applicable. Static publication changes MUST cover unchanged content, interrupted-write retries,
+concurrency, invalid paths, and game reuse. Changes to legacy Git helpers
+MUST cover failed-push retries, remote advances, and dirty or diverged checkouts.
 
 Daily-game changes MUST cover missing captures, exclusion of legacy SVG-only
 results, GIF reuse and replacement, day rollover, capture-service failures,
