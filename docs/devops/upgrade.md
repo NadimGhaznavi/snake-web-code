@@ -32,3 +32,8 @@ and prepare [Caddy access](static-publishing.md) before the first publishing run
 For the release introducing the neuromancer LAN server, run
 [the separate Caddy setup](neuromancer-deployment.md) after upgrading. Application
 upgrades do not install or reload Caddy.
+
+After releases that change the Caddy template or listener settings, apply them
+from the matching release checkout with
+`sudo scripts/deploy-neuromancer-caddy.sh --reload-only`. Existing JSON overrides
+remain in effect; see [network settings](neuromancer-deployment.md#network-settings).

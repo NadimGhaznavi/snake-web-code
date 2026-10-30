@@ -15,7 +15,7 @@ usage() {
 Usage: sudo $0
 
 Stop and disable snake-web.service, remove its unit, and remove
-/opt/prod/snakewebcode and all daemon code beneath it.
+/opt/prod/snakewebcode daemon code, retaining conf/ with network settings.
 Preserve the snake-web account and group, /var/lib/snake-web (including
 public GIFs, credentials, and any old website checkout), and the development checkout.
 Safe to rerun when the production directory has already been removed.
@@ -29,7 +29,7 @@ fi
 [[ $# == 0 ]] || { usage >&2; exit 2; }
 [[ ${EUID} == 0 ]] || fail 'Run this uninstaller as root.'
 
-for directory in /opt /opt/prod "${install_dir}"; do
+for directory in /opt /opt/prod "${install_dir}" "${install_dir}/conf"; do
     [[ ! -L ${directory} ]] || fail "Refusing symlink: ${directory}"
     [[ ! -e ${directory} || -d ${directory} ]] || fail "Not a directory: ${directory}"
 done
@@ -41,9 +41,17 @@ if [[ -e ${unit_path} || -L ${unit_path} ]]; then
 fi
 
 if [[ -d ${install_dir} ]]; then
-    rm --recursive --force --one-file-system --preserve-root=all -- "${install_dir}"
-    printf 'Removed daemon code directory: %s\n' "${install_dir}"
+    shopt -s dotglob nullglob
+    for path in "${install_dir}"/*; do
+        [[ ${path} == "${install_dir}/conf" ]] && continue
+        rm --recursive --force --one-file-system --preserve-root=all -- "${path}"
+    done
+    if [[ ! -d ${install_dir}/conf ]]; then
+        rmdir -- "${install_dir}"
+    fi
+    printf 'Removed daemon code from: %s\n' "${install_dir}"
 else
     printf 'Already uninstalled: %s does not exist.\n' "${install_dir}"
 fi
 printf 'Preserved snake-web account, group, and /var/lib/snake-web.\n'
+printf 'Preserved existing network settings in /opt/prod/snakewebcode/conf.\n'
