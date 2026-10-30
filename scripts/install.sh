@@ -55,6 +55,7 @@ code_files=(
     snakewebcode/activity/AppDb.py
     snakewebcode/activity/PublishLive.py
     snakewebcode/activity/DailyGames.py
+    snakewebcode/activity/DailyProgress.py
     snakewebcode/activity/ScoreDistribution.py
     snakewebcode/activity/SimulationAnimation.py
     snakewebcode/activity/fonts/DejaVuSansMono.ttf

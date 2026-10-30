@@ -131,12 +131,15 @@ class InstallationTests(unittest.TestCase):
         public.write_bytes(b'GIF89a saved public artifact')
         metadata = public.parent / 'live.json'
         metadata.write_text('{"updated":"2026-10-30 12:00","games":[]}\n')
+        progress = self.home / '.public-progress.json'
+        progress.write_text('{"frames": []}\n')
+        progress.chmod(0o600)
         network = self.deployed / 'conf/snakewebcode.json'
         self.assertEqual(network.stat().st_mode & 0o777, 0o644)
         self.assertEqual(network.parent.stat().st_mode & 0o777, 0o755)
         network.write_text('{"network":{"http":{"port":18080}}}\n')
         saved = {path: (path.read_bytes(), path.stat().st_mode) for path in
-                 (environment, credentials, key, public, metadata, network)}
+                 (environment, credentials, key, public, metadata, progress, network)}
         unused = [self.deployed / 'snakewebcode' / name for name in (
             'unused.py', 'unused/assets/template.html')]
         for path in unused:

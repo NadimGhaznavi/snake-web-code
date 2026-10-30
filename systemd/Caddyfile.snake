@@ -1,5 +1,5 @@
 snake.osoyalce.com {
-	@artifacts path /game-one.gif /game-two.gif /game-three.gif /game-four.gif /game-five.gif /score-distribution.gif /live.json
+	@artifacts path /game-one.gif /game-two.gif /game-three.gif /game-four.gif /game-five.gif /daily-progress.gif /score-distribution.gif /live.json
 	handle @artifacts {
 		root * /var/lib/snake-web/public
 		header {

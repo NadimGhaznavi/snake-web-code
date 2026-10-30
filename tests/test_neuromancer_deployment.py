@@ -113,6 +113,7 @@ class NeuromancerDeploymentTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn('http://:8080 {', self.site.read_text())
         self.assertIn('bind 192.168.0.106', self.site.read_text())
+        self.assertIn('/daily-progress.gif', self.site.read_text())
         self.assertNotIn('__HTTP_', self.site.read_text())
         self.assertIn(f'import {self.site}\n', self.config.read_text())
         for path in (self.config, self.site):

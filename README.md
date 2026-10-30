@@ -1,7 +1,8 @@
 # SnakeWebCode
 
-Python service that writes today's top five captured Snake games and an animated
-score distribution to static files served by Caddy at `https://snake.osoyalce.com`.
+Python service that writes today's top five captured Snake games, animated daily
+scores, and a cumulative score distribution to static files served by Caddy at
+`https://snake.osoyalce.com`.
 The [Snake Web website](https://github.com/NadimGhaznavi/snake-web) contains the
 maintained page and navigation script; routine experiment updates never use Git.
 
@@ -46,6 +47,17 @@ interrupted write triggers fresh rendering on the next pass.
 A failed pass returns nonzero with `--once` or logs an error and retries later.
 Unchanged publications retain the existing files and update time.
 
+`daily-progress.gif` shows the day's top ten completed simulation scores as
+ascending bars, including zero scores and runs without saved game captures.
+Scheduled passes collect one observation per UTC half-hour, without backfilling
+missed observations. Frames last two seconds, with a five-second final pause;
+axes stay fixed and frame timestamps display Toronto time. Midnight UTC closes
+the preceding day; 00:30 UTC starts the new chart. Only the current chart's
+observations are retained, up to 48, in `.public-progress.json` alongside the
+default public directory. Manual `--once` passes reuse those observations and
+can regenerate a missing GIF; before the first scheduled observation, the daily
+chart is absent.
+
 `score-distribution.gif` uses Ax3l's Pillow renderer: an empty plot, cumulative
 checkpoints every 500 simulation IDs for two seconds each, then all simulations
 for five seconds. The final distribution fixes both axes for every frame. Missing
@@ -56,7 +68,8 @@ distribution; identical bytes are left untouched.
 
 The minimal website displays **Ax3l Live**, **LLM configured Snake AI**, the latest
 publication time in Toronto (`YYYY-MM-DD HH:MM`), one game with wrapping arrows,
-and the histogram. Reload to refresh. The page fetches `live.json` without caching;
+the daily score chart, and the cumulative histogram, in that order. Reload to
+refresh. The page fetches `live.json` without caching;
 GIF responses use `Cache-Control: no-store`. Zero games leave an empty viewer;
 one game disables both arrows. Images retain their natural size and shrink on
 narrow screens. No database, Python server, or Git push serves browser requests.
