@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add a one-time wintermute environment/Caddy deployment script based on the
+  host's MyCount setup, with configuration backups, validation, direct reload,
+  public-file access, and immediate static publication.
+
 ## [5.0.0] - 2026-10-30 @ 01:00
 
 ### Changed
