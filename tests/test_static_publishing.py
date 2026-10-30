@@ -1,6 +1,6 @@
 """Check the Caddy publisher with captured games and disposable files only."""
 
-from datetime import date
+from datetime import date, datetime
 from io import BytesIO
 import json
 import os
@@ -39,6 +39,8 @@ class StaticPublicationTests(unittest.TestCase):
         self.app.get_daily_game_day.return_value = date(2026, 10, 29)
         self.app.get_daily_runs.return_value = [run(i) for i in range(8, 0, -1)]
         self.app.get_run_scores.return_value = [dict(id=i, high_score=i) for i in range(1, 9)]
+        self.app.get_daily_progress_time.return_value = datetime(2026, 10, 29, 12, 30)
+        self.app.get_daily_configurations.return_value = [dict(id=i, high_score=i) for i in range(8, 0, -1)]
         self.snake = self.enterContext(patch('snakewebcode.activity.DailyGames.SnakeLab')).return_value
         self.snake.get_highscore_frames.side_effect = lambda uuid: frames(int(UUID(uuid)))
 
@@ -61,7 +63,9 @@ class StaticPublicationTests(unittest.TestCase):
             self.assertEqual(path.stat().st_mode & 0o777, 0o644)
             with Image.open(path) as image:
                 self.assertEqual(image.info['loop'], 0)
-                self.assertGreater(image.n_frames, 1)
+                self.assertGreaterEqual(image.n_frames, 1 if name == self.publisher.PROGRESS_GIF_PATH else 2)
+        self.assertTrue(self.metadata()['daily_progress'])
+        self.assertEqual((self.root / '.public-progress.json').stat().st_mode & 0o777, 0o600)
 
     def test_unchanged_and_restart_reuse_bytes_mtimes_and_timestamp(self):
         self.publish()
@@ -129,6 +133,52 @@ class StaticPublicationTests(unittest.TestCase):
             (self.public / 'score-distribution.gif').unlink()
             self.publish()
             render.assert_called_once()
+
+    def test_manual_pass_before_first_observation_publishes_without_daily_chart(self):
+        PublishLive(self.app, self.publisher).run(collect_progress=False)
+        self.assertFalse(self.metadata()['daily_progress'])
+        self.assertFalse((self.public / 'daily-progress.gif').exists())
+        self.app.get_daily_progress_time.assert_not_called()
+        self.app.get_daily_configurations.assert_not_called()
+
+    def test_daily_observations_survive_interrupted_publication(self):
+        self.publish()
+        history = self.publisher.read_progress()
+        self.app.get_daily_progress_time.return_value = datetime(2026, 10, 29, 13)
+        replace = self.publisher._replace
+
+        def fail_chart(path, data, **kwargs):
+            if path.name == 'daily-progress.gif':
+                raise OSError('disk full')
+            replace(path, data, **kwargs)
+
+        with patch.object(self.publisher, '_replace', side_effect=fail_chart):
+            with self.assertRaisesRegex(OSError, 'disk full'):
+                self.publish()
+        self.assertEqual(self.publisher.read_progress(), history)
+        self.assertFalse((self.public / 'live.json').exists())
+        self.publish()
+        self.assertEqual(len(json.loads(self.publisher.read_progress())['frames']), 2)
+        self.assertIn('unchanged', self.publish())
+
+    def test_failed_private_state_write_retries_without_losing_observations(self):
+        self.publish()
+        history = self.publisher.read_progress()
+        self.app.get_daily_progress_time.return_value = datetime(2026, 10, 29, 13)
+        with patch.object(self.publisher, 'save_progress', side_effect=OSError('disk full')):
+            with self.assertRaisesRegex(OSError, 'disk full'):
+                self.publish()
+        self.assertEqual(self.publisher.read_progress(), history)
+        self.publish()
+        self.assertEqual(len(json.loads(self.publisher.read_progress())['frames']), 2)
+
+    def test_private_progress_state_rejects_symlink(self):
+        secret = self.root / 'private'
+        secret.write_text('private data')
+        (self.root / '.public-progress.json').symlink_to(secret)
+        with self.assertRaisesRegex(RuntimeError, 'without symlinks'):
+            self.publish()
+        self.assertEqual(secret.read_text(), 'private data')
 
     def test_interrupted_rank_change_does_not_reuse_new_image_for_old_game(self):
         self.publish()
@@ -198,4 +248,4 @@ class StaticPublicationTests(unittest.TestCase):
         db.assert_called_once_with()
         self.assertIsInstance(activity.call_args.args[1], StaticPublisher)
         self.assertEqual(activity.call_args.args[1].directory, self.public)
-        activity.return_value.run.assert_called_once_with()
+        activity.return_value.run.assert_called_once_with(collect_progress=True)

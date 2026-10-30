@@ -16,12 +16,12 @@ from snakewebcode.interface.DbMgr import DbMgr
 from snakewebcode.interface.StaticPublisher import StaticPublisher
 
 
-def publish_once() -> str:
+def publish_once(*, collect_progress=True) -> str:
     with DbMgr() as db:
         return PublishLive(
             AppDb(db),
             StaticPublisher(os.environ.get('PUBLISH_DIRECTORY', '/var/lib/snake-web/public')),
-        ).run()
+        ).run(collect_progress=collect_progress)
 
 
 def seconds_until_next_publish(now: datetime) -> float:
@@ -45,7 +45,7 @@ def main() -> int:
         if not args.once and stopped.wait(seconds_until_next_publish(datetime.now())):
             break
         try:
-            logging.info(publish_once())
+            logging.info(publish_once(collect_progress=not args.once))
         except (OSError, RuntimeError, ValueError, pymysql.MySQLError, zmq.ZMQError) as exc:
             logging.error("Static publication failed: %s", exc)
             if args.once:

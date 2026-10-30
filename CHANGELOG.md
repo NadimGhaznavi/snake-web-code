@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
+All changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 
 ## [Unreleased]
+
+This release is named for the element **Uranium (U)**. Uranium was named after 
+the planet Uranus, discovered only a few years before the element.
+
+### Summary
+
+- Restore the animated daily top ten scores between the game viewer and the
+  cumulative distribution. Keep at most one day's half-hour observations locally,
+  reuse them during manual refreshes, and serve the GIF through Caddy.
+- Remove obsolete generated reports, captures, and automated updates from the
+  `snake-web` GitHub repository's history. Retain `main`, `dev`, and
+  `feat/maint-0.2.3`, rewrite release tags, and reduce a fresh clone's Git objects
+  to 2.77 MiB. Synchronize and prune the local website checkout. 
+  - Released over 500 MiB of space back to GitHub.
 
 ## [5.0.5] - 2026-10-30 @ 05:22
 

@@ -23,6 +23,7 @@ class ServiceTests(unittest.TestCase):
                                      datetime(2026, 10, 30, 13, 0)]
             self.assertEqual(server.main(), 0)
         self.assertEqual(publish.call_count, 2)
+        self.assertTrue(all(call.kwargs == {'collect_progress': True} for call in publish.call_args_list))
         self.assertEqual([call.args for call in stopped.wait.call_args_list], [(1800,)] * 3)
 
     def test_unexpected_programming_error_is_not_swallowed(self):
@@ -52,7 +53,7 @@ class ServiceTests(unittest.TestCase):
             event.return_value.is_set.return_value = False
             self.assertEqual(server.main(), 0)
             event.return_value.wait.assert_not_called()
-            publish.assert_called_once_with()
+            publish.assert_called_once_with(collect_progress=False)
 
     def test_once_failure_returns_nonzero(self):
         with patch.object(sys, 'argv', ['snake-web', '--once']), \
@@ -97,7 +98,7 @@ class ServiceTests(unittest.TestCase):
         def register(signum, callback):
             handlers[signum] = callback
 
-        def publish():
+        def publish(**kwargs):
             handlers[server.signal.SIGTERM](server.signal.SIGTERM, None)
             return 'published'
 
