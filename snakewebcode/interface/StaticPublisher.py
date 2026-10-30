@@ -12,7 +12,8 @@ class StaticPublisher:
     DAILY_PATH = 'live.json'
     DAILY_GIF_PATHS = tuple(f'game-{name}.gif' for name in ('one', 'two', 'three', 'four', 'five'))
     DISTRIBUTION_PATH = 'score-distribution.gif'
-    GIF_PATHS = (*DAILY_GIF_PATHS, DISTRIBUTION_PATH)
+    PROGRESS_GIF_PATH = 'daily-progress.gif'
+    GIF_PATHS = (*DAILY_GIF_PATHS, PROGRESS_GIF_PATH, DISTRIBUTION_PATH)
 
     def __init__(self, directory):
         self.directory = Path(directory)
@@ -44,6 +45,20 @@ class StaticPublisher:
         path = self._path(name)
         return path.read_bytes() if path.exists() else b''
 
+    def _progress_path(self):
+        path = self.directory.parent / f'.{self.directory.name}-progress.json'
+        if path.is_symlink() or (path.exists() and not path.is_file()):
+            raise RuntimeError('Daily progress state must be a regular file without symlinks')
+        return path
+
+    def read_progress(self):
+        path = self._progress_path()
+        return path.read_text(encoding='utf-8') if path.exists() else ''
+
+    def save_progress(self, content):
+        if content and content != self.read_progress():
+            self._replace(self._progress_path(), content.encode('utf-8'), mode=0o600)
+
     def publish(self, state, files, *, updated):
         if not set(files).issubset(self.GIF_PATHS):
             raise ValueError('Not a managed GIF path')
@@ -67,13 +82,13 @@ class StaticPublisher:
         return True
 
     @staticmethod
-    def _replace(path, data):
+    def _replace(path, data, *, mode=0o644):
         temporary = None
         try:
             with tempfile.NamedTemporaryFile(dir=path.parent, delete=False) as stream:
                 temporary = Path(stream.name)
                 stream.write(data)
-            temporary.chmod(0o644)
+            temporary.chmod(mode)
             temporary.replace(path)
         finally:
             if temporary is not None:
