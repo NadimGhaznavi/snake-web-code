@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.0.3] - 2026-10-30 @ 02:19
+
 This release is named for the element **Bismuth (Bi)**. Bismuth can form spectacular 
 rainbow-colored hopper crystals as a thin oxide film develops on its surface.
 
