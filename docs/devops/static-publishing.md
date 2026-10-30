@@ -8,17 +8,13 @@ directory on its first pass; its parent must already exist and be writable by
 the service and manual publication. Keep the directory separate from Git checkouts,
 credentials, and old experiment exports.
 
-## One-time website update
+## Website
 
-Publish the revised `index.md` and `assets/js/ax3l-live.js` from the separate
+Publish `index.md` and `assets/js/ax3l-live.js` from the separate
 `snake-web` checkout using its normal GitHub Pages workflow. The homepage embeds
 images from `https://snake.osoyalce.com`, reads `live.json` for available games and
 the update time, and cycles through today's top five with wrapping arrow buttons.
 Subsequent experiment updates modify only the Caddy-served files.
-
-The change does not delete old reports or rewrite Git history. Retire or remove
-old published reports separately if desired; deleting files alone does not reclaim
-historical Git objects.
 
 ## Caddy
 
@@ -54,19 +50,7 @@ fresh query parameters, bypassing older cached URLs. See the
 [Caddy header reference](https://caddyserver.com/docs/caddyfile/directives/header)
 and [HTTP cache controls](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Cache-Control).
 
-## Upgrade from Git publication
-
-For the inspected wintermute host with Snake Web 5 already installed, use the
-[one-time deployment script](wintermute-deployment.md).
-
-Review the release, production host, and source database before rollout. Upgrading
-restarts the publisher. Set the public directory and prepare Caddy access first.
-Old `PUBLISH_CHECKOUT`, `PUBLISH_BRANCH`, and Git SSH settings are ignored by the
-new service; upgrades preserve the environment file, so remove those obsolete
-entries manually if desired. Without `PUBLISH_DIRECTORY`, the new default is used.
-No Git credentials or publishing clone are required for runtime publication.
-Existing clones and old exports are left untouched. Retain them until the new
-page has been verified; no source-schema migration or database reset is needed.
+## Verification
 
 After deployment, [publish once](push-now.md) and verify:
 

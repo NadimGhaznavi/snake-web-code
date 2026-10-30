@@ -9,6 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.0.3] - 2026-10-30 @ 02:19
+
+This release is named for the element **Bismuth (Bi)**. Bismuth can form spectacular 
+rainbow-colored hopper crystals as a thin oxide film develops on its surface.
+
+### Changed
+
+- Replace the installed Python package on upgrade, removing unused application
+  files without maintaining retired-module or account-shell migration paths.
+- Simplify deployment documentation and tests around the current static publisher.
+
+### Fixed
+
+- Keep the virtual environment and installed dependencies readable by the service
+  account when installation runs with a restrictive root umask.
+- Preserve the installed Python package and service unit when database provisioning
+  fails during an upgrade.
+
 ## [5.0.2] - 2026-10-30 @ 02:04
 
 ### Changed

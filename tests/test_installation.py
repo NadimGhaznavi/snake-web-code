@@ -48,7 +48,9 @@ elif name == "python" and args[0].endswith("provision-database.py"):
         credentials.write_text("saved reader credentials\\n")
         credentials.chmod(0o600)
 elif name == "python" and args[:2] == ["-m", "pip"]:
-    pass
+    dependency = Path(sys.argv[0]).parent.parent / "lib/site-packages/dependency/__init__.py"
+    dependency.parent.mkdir(parents=True, exist_ok=True)
+    dependency.write_text("# installed dependency\\n")
 elif name in ("systemctl", "systemd-run"):
     pass
 else:
@@ -66,7 +68,7 @@ class InstallationTests(unittest.TestCase):
         self.bin.mkdir()
         stub = "#!" + sys.executable + "\n" + OS_STUB
         for name in ("getent", "id", "install", "python3", "systemctl", "systemd-run",
-                     "groupadd", "useradd", "usermod", "git", "mariadb"):
+                     "groupadd", "useradd", "mariadb"):
             command = self.bin / name
             command.write_text(stub)
             command.chmod(0o755)
@@ -91,10 +93,10 @@ class InstallationTests(unittest.TestCase):
         self.env = dict(os.environ, PATH=str(self.bin) + os.pathsep + os.environ["PATH"],
                         SNAKEWEB_TEST_ROOT=str(self.root))
 
-    def run_script(self, name, **env):
+    def run_script(self, name, *, umask=-1, **env):
         return subprocess.run(["/bin/bash", str(self.checkout / "scripts" / name)],
                               cwd=self.root, env=dict(self.env, **env),
-                              capture_output=True, text=True, timeout=20)
+                              capture_output=True, text=True, timeout=20, umask=umask)
 
     def commands(self):
         return [json.loads(line) for line in (self.root / "commands.jsonl").read_text().splitlines()]
@@ -116,34 +118,36 @@ class InstallationTests(unittest.TestCase):
         self.assertEqual(self.config.stat().st_mode & 0o777, 0o700)
         self.assertEqual(self.home.stat().st_mode & 0o777, 0o750)
         environment = self.config / "snake-web.env"
-        environment.write_text("PUBLISH_CHECKOUT=/custom/publishing/path\n")
+        environment.write_text("PUBLISH_DIRECTORY=/custom/public\nSNAKE_LAB_ENDPOINT=tcp://capture-host:41970\n")
         credentials = self.config / "database.env"
         key = self.home / ".ssh/id_ed25519"
         key.parent.mkdir(mode=0o700)
         key.write_text("private test key\n")
         key.chmod(0o600)
-        cursor = self.home / "site/reports/data/event-export.json"
-        cursor.parent.mkdir(parents=True)
-        cursor.write_text('{"last_event_id":123}\n')
         public = self.home / 'public/game-one.gif'
         public.parent.mkdir()
         public.write_bytes(b'GIF89a saved public artifact')
-        legacy = self.root / "opt/prod/snake-web/old-code"
-        legacy.parent.mkdir(parents=True)
-        legacy.write_text("previous installation\n")
+        metadata = public.parent / 'live.json'
+        metadata.write_text('{"updated":"2026-10-30 12:00","games":[]}\n')
         saved = {path: (path.read_bytes(), path.stat().st_mode) for path in
-                 (environment, credentials, key, cursor, public, legacy)}
-        retired = [self.deployed / 'snakewebcode' / name for name in (
-            'interface/GitPublisher.py', 'activity/PublishStatus.py',
-            'activity/reports/event-log.html', 'entity/ExperimentStatus.py')]
-        for path in retired:
+                 (environment, credentials, key, public, metadata)}
+        unused = [self.deployed / 'snakewebcode' / name for name in (
+            'unused.py', 'unused/assets/template.html')]
+        for path in unused:
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text('retired application code\n')
+            path.write_text('unused application file\n')
+        linked_state = self.deployed / 'snakewebcode/unused-state'
+        linked_state.symlink_to(self.home, target_is_directory=True)
         constants.write_text('VERSION = "old"\n')
         result = self.run_script("upgrade.sh")
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertEqual(constants.read_bytes(), (ROOT / "snakewebcode/constants/DSnakeWebCode.py").read_bytes())
-        self.assertTrue(all(not path.exists() for path in retired))
+        self.assertEqual(
+            {path.relative_to(self.deployed / 'snakewebcode')
+             for path in (self.deployed / 'snakewebcode').rglob('*') if path.is_file()},
+            {path.relative_to(source) for path in source.rglob('*') if path.is_file()})
+        self.assertFalse((self.deployed / 'snakewebcode/unused').exists())
+        self.assertFalse(linked_state.is_symlink())
         for path, (content, mode) in saved.items():
             self.assertEqual((path.read_bytes(), path.stat().st_mode), (content, mode))
         installs = [command for command in self.commands() if command[0] == "install"]
@@ -160,17 +164,42 @@ class InstallationTests(unittest.TestCase):
         for path, (content, mode) in saved.items():
             self.assertEqual((path.read_bytes(), path.stat().st_mode), (content, mode))
 
-    def test_provisioning_failure_leaves_existing_service_unit_untouched(self):
+    def test_provisioning_failure_leaves_existing_code_and_service_unit_untouched(self):
         self.unit.write_text("previous service unit\n")
-        retired = self.deployed / 'snakewebcode/activity/reports/event-log.html'
-        retired.parent.mkdir(parents=True)
-        retired.write_text('previous report asset\n')
+        server = self.deployed / 'snakewebcode/server.py'
+        server.parent.mkdir(parents=True)
+        server.write_text('previous application code\n')
         result = self.run_script("upgrade.sh", SNAKEWEB_TEST_PROVISION_FAIL="1")
         self.assertEqual(result.returncode, 7, result.stdout + result.stderr)
-        self.assertTrue((self.deployed / "snakewebcode/constants/DSnakeWebCode.py").is_file())
+        self.assertFalse((self.deployed / "snakewebcode/constants/DSnakeWebCode.py").exists())
         self.assertEqual(self.unit.read_text(), "previous service unit\n")
-        self.assertEqual(retired.read_text(), 'previous report asset\n')
+        self.assertEqual(server.read_text(), 'previous application code\n')
         self.assertFalse(any(command[0] == "systemctl" for command in self.commands()))
+
+    def test_restrictive_umask_keeps_python_readable_and_configuration_private(self):
+        result = self.run_script('upgrade.sh', umask=0o077)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        venv = self.deployed / 'venv'
+        for path in (venv, venv / 'bin', venv / 'lib', venv / 'lib/site-packages',
+                     venv / 'lib/site-packages/dependency'):
+            self.assertEqual(path.stat().st_mode & 0o777, 0o755, str(path))
+        self.assertEqual((venv / 'lib/site-packages/dependency/__init__.py').stat().st_mode & 0o777, 0o644)
+        for path in ('snake-web.env', 'database.env'):
+            self.assertEqual((self.config / path).stat().st_mode & 0o777, 0o600)
+        self.assertEqual(self.config.stat().st_mode & 0o777, 0o700)
+
+    def test_upgrade_rejects_symlinked_application_package(self):
+        self.home.mkdir()
+        saved = self.home / 'saved-state'
+        saved.write_text('preserve this state\n')
+        self.deployed.mkdir(parents=True)
+        package = self.deployed / 'snakewebcode'
+        package.symlink_to(self.home, target_is_directory=True)
+        result = self.run_script('upgrade.sh')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('Refusing symlink', result.stderr)
+        self.assertTrue(package.is_symlink())
+        self.assertEqual(saved.read_text(), 'preserve this state\n')
 
     def test_manual_publication_uses_new_code_with_existing_identity_and_configuration(self):
         result = self.run_script("push-now.sh")
