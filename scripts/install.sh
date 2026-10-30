@@ -25,6 +25,7 @@ enable and start snake-web.service (restart it on reinstall).
 Safe to rerun with an existing compatible account and directories.
 Provisions a dedicated local MariaDB reader and /etc/snake-web/database.env.
 Creates /etc/snake-web/snake-web.env; preserves existing settings on reinstall.
+Creates conf/snakewebcode.json from listener defaults; preserves existing overrides.
 Requires local MariaDB root socket access and the existing Snake Lab schema.
 Requires Python 3 with venv support, systemd, and package download access.
 Caddy setup is separate; see docs/devops/static-publishing.md.
@@ -62,12 +63,14 @@ code_files=(
     snakewebcode/interface/SnakeLab.py
     snakewebcode/interface/StaticPublisher.py
     snakewebcode/interface/GIFAnimation.py
+    snakewebcode/interface/Configuration.py
+    snakewebcode/interface/Network.py
 )
 for source_file in "${code_files[@]}" requirements.txt scripts/provision-database.py systemd/snake-web.service systemd/snake-web.env; do
     [[ -f ${source_dir}/${source_file} ]] || fail "Missing source file: ${source_file}"
 done
 
-for directory in /etc "${config_dir}" /var/lib "${service_home}" /opt /opt/prod "${install_dir}" "${install_dir}/snakewebcode" "${install_dir}/venv"; do
+for directory in /etc "${config_dir}" /var/lib "${service_home}" /opt /opt/prod "${install_dir}" "${install_dir}/conf" "${install_dir}/snakewebcode" "${install_dir}/venv"; do
     [[ ! -L ${directory} ]] || fail "Refusing symlink: ${directory}"
     [[ ! -e ${directory} || -d ${directory} ]] || fail "Not a directory: ${directory}"
 done
@@ -79,6 +82,20 @@ requirements_file="${install_dir}/requirements.txt"
 
 [[ ! -L ${environment_file} ]] || fail "Refusing symlink: ${environment_file}"
 [[ ! -e ${environment_file} || -f ${environment_file} ]] || fail "Not a regular file: ${environment_file}"
+
+# Validate incoming network settings before provisioning, replacing code, or restarting services.
+network_config=${install_dir}/conf/snakewebcode.json
+[[ ! -L ${network_config} ]] || fail "Refusing symlink: ${network_config}"
+/usr/bin/python3 -B - "${source_dir}" "${network_config}" <<'PY'
+from pathlib import Path
+import sys
+
+sys.path.insert(0, sys.argv[1])
+from snakewebcode.constants.DSnakeWebCode import DSnakeWebCode
+from snakewebcode.interface.Configuration import Configuration
+
+Configuration.read(Path(sys.argv[2]), DSnakeWebCode.CMDB_NETWORK)
+PY
 
 if account=$(getent passwd "${service_user}"); then
     IFS=: read -r name password uid gid comment account_home account_shell <<< "${account}"
@@ -112,6 +129,15 @@ rm -rf --one-file-system -- "${install_dir}/snakewebcode"
 for relative in "${code_files[@]}"; do
     install -D -m 0644 -o root -g root "${source_dir}/${relative}" "${install_dir}/${relative}"
 done
+/usr/bin/python3 -B - "${source_dir}" "${network_config}" <<'PY'
+from pathlib import Path
+import sys
+
+sys.path.insert(0, sys.argv[1])
+from snakewebcode.interface.Configuration import Configuration
+
+Configuration.install(Path(sys.argv[2]))
+PY
 install -m 0644 -o root -g root "${source_dir}/systemd/snake-web.service" "${unit_path}"
 systemctl daemon-reload
 systemctl enable snake-web.service

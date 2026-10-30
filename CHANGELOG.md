@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+This release is named for the element **Protactinium (Pa)**. Protactinium is rare, 
+radioactive, and named because it decays into actinium.
+
+### Changed
+
+- Declare the managed Caddy HTTP backend in CMDB at `192.168.0.106:8080`.
+  Generate its listener and deployment checks from shared network settings,
+  preserve JSON overrides through installation and uninstall, and support
+  applying settings with `deploy-neuromancer-caddy.sh --reload-only`.
+
 ## [5.0.4] - 2026-10-30 @ 05:11
 
 This release is named for the element **Thorium (Th)**. Thorium is more abundant 

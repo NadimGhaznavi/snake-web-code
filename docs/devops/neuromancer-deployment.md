@@ -15,24 +15,60 @@ its existing metadata and histogram, and Debian package download access. It:
    `/var/backups/snake-web-caddy.*`.
 3. Grants `caddy` traversal of `/var/lib/snake-web` and verifies that it can read
    the artifacts without opening the service's private state.
-4. Installs [the LAN site](../../systemd/Caddyfile.snake-neuromancer) as
+4. Renders [the LAN site template](../../systemd/Caddyfile.snake-neuromancer) as
    `/etc/caddy/snake-web.caddy` and imports it from `/etc/caddy/Caddyfile`,
    preserving other sites. The complete candidate configuration is validated first.
 5. Reloads running Caddy or starts it, enables it at boot, and checks metadata
-   and histogram HTTP responses on `192.168.0.106:8080`.
+   and histogram HTTP responses on the resolved backend address and port.
 
 The script can be rerun; it replaces the application config without duplicating
-the import. It requires the default publication root and leaves publisher
-configuration, credentials, databases, artifacts, and the publisher service untouched.
+the import. It requires the default publication root and preserves publisher
+environment settings, credentials, databases, artifacts, and the publisher service.
 Custom roots require a reviewed configuration and corresponding permissions.
 On a reload/start failure, it restores the previous Caddy files and attempts service
 recovery. Package installation, ACL changes, and earlier successful steps may remain
 applied after failure; inspect the reported backup directory before retrying.
 
+## Network settings
+
+`DSnakeWebCode.CMDB_NETWORK` declares the `http` default as
+`192.168.0.106:8080`. Installation creates the non-secret, readable file
+`/opt/prod/snakewebcode/conf/snakewebcode.json` from those defaults only when
+missing. Reinstall, upgrade, and uninstall preserve existing settings. The Caddy
+setup script also creates it if needed. For example:
+
+```json
+{
+  "network": {
+    "http": {"interface": "192.168.0.106", "port": 8080}
+  }
+}
+```
+
+JSON fields override the declaration; omitted roles and fields inherit defaults.
+Explicit values stay fixed when later release defaults change. Only `network`,
+the declared `http` role, and its `interface` and `port` fields are supported.
+The interface must be an IPv4 address; the port must be an integer from 1 to
+65535. Invalid or unreadable settings fail before Caddy changes or package work.
+A missing file uses the declared defaults. No listener CLI overrides are provided.
+
+After editing JSON, apply it from the installed release's checkout:
+
+```sh
+sudo scripts/deploy-neuromancer-caddy.sh --reload-only
+```
+
+This validates settings, regenerates the imported site, and reloads running Caddy
+or starts it, without installing packages. Each invocation resolves settings once
+for both Caddy and HTTP checks. Probes use loopback for a wildcard `0.0.0.0` bind.
+Keep wintermute's upstream synchronized if the backend address or port changes;
+the script does not update the other host. CMDB reports declared defaults, not
+production JSON overrides.
+
 ## Routing and verification
 
-The backend serves HTTP bound to neuromancer's LAN address `192.168.0.106`, port
-8080. Wintermute owns public HTTPS; keep router ports 80/443 and DNS pointed there.
+By default, the backend serves HTTP on neuromancer's LAN address
+`192.168.0.106:8080`. Wintermute owns public HTTPS; keep router ports 80/443 and DNS pointed there.
 Its `/etc/caddy/snake-web.caddy` should contain:
 
 ```caddyfile

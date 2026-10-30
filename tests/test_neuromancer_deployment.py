@@ -1,5 +1,7 @@
 """Exercise the LAN Caddy deployment without installing packages or touching services."""
 
+import json
+import subprocess
 import sys
 import unittest
 
@@ -109,7 +111,9 @@ class NeuromancerDeploymentTests(unittest.TestCase):
             self.environment, self.credentials, *self.fixture.home.joinpath('public').iterdir())}
         result = self.run_script(umask=0o077)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertEqual(self.site.read_bytes(), self.template.read_bytes())
+        self.assertIn('http://:8080 {', self.site.read_text())
+        self.assertIn('bind 192.168.0.106', self.site.read_text())
+        self.assertNotIn('__HTTP_', self.site.read_text())
         self.assertIn(f'import {self.site}\n', self.config.read_text())
         for path in (self.config, self.site):
             self.assertEqual(path.stat().st_mode & 0o777, 0o644)
@@ -211,3 +215,45 @@ class NeuromancerDeploymentTests(unittest.TestCase):
         self.assertTrue(self.site.exists())
         self.assertIn('Deployment incomplete', result.stderr)
         self.assertNotIn('LAN server configured.', result.stdout)
+
+    def test_changed_declared_defaults_drive_site_and_http_checks(self):
+        constants = self.fixture.checkout / 'snakewebcode/constants/DSnakeWebCode.py'
+        constants.write_text(constants.read_text().replace(
+            '("http", "192.168.0.106", 8080)', '("http", "192.0.2.8", 18080)'))
+        result = self.run_script()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn('http://:18080 {', self.site.read_text())
+        self.assertIn('bind 192.0.2.8', self.site.read_text())
+        probes = [c[-1] for c in self.fixture.commands() if c[0] == 'curl']
+        self.assertEqual(probes, ['http://192.0.2.8:18080/live.json',
+                                  'http://192.0.2.8:18080/score-distribution.gif'])
+
+    def test_reload_only_applies_preserved_overrides_and_probes_wildcard_on_loopback(self):
+        self.caddy.mkdir()
+        self.config.write_text('# installed Caddy\n')
+        (self.fixture.root / 'caddy-running').touch()
+        settings = self.fixture.deployed / 'conf/snakewebcode.json'
+        settings.parent.mkdir()
+        original = json.dumps({'network': {'http': {'interface': '0.0.0.0', 'port': 18081}}})
+        settings.write_text(original)
+        result = subprocess.run(
+            ['/bin/bash', str(self.fixture.checkout / 'scripts/deploy-neuromancer-caddy.sh'), '--reload-only'],
+            env=self.fixture.env, capture_output=True, text=True, timeout=20)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(settings.read_text(), original)
+        self.assertIn('http://:18081 {', self.site.read_text())
+        self.assertIn('bind 0.0.0.0', self.site.read_text())
+        commands = self.fixture.commands()
+        self.assertFalse(any(c[0] == 'apt-get' for c in commands))
+        self.assertIn('http://127.0.0.1:18081/live.json', [c[-1] for c in commands if c[0] == 'curl'])
+
+    def test_invalid_network_settings_fail_before_packages_or_caddy_changes(self):
+        settings = self.fixture.deployed / 'conf/snakewebcode.json'
+        settings.parent.mkdir()
+        settings.write_text('{"network":{"http":{"port":0}}}')
+        result = self.run_script()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('network.http.port', result.stderr)
+        self.assertFalse(self.site.exists())
+        self.assertEqual(list(self.backups.iterdir()), [])
+        self.assertFalse(any(c[0] in ('apt-get', 'caddy') for c in self.fixture.commands()))

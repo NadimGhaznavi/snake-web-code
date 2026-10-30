@@ -1,5 +1,5 @@
-http://:8080 {
-	bind 192.168.0.106
+http://:__HTTP_PORT__ {
+	bind __HTTP_INTERFACE__
 	@artifacts path /game-one.gif /game-two.gif /game-three.gif /game-four.gif /game-five.gif /score-distribution.gif /live.json
 	handle @artifacts {
 		root * /var/lib/snake-web/public

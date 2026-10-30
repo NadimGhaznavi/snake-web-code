@@ -40,6 +40,8 @@ elif name == "python3" and args[:2] == ["-m", "venv"]:
     target = Path(args[2]) / "bin/python"
     target.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(__file__, target)
+elif name == "python3" and args[:2] == ["-B", "-"]:
+    sys.exit(subprocess.run([sys.executable, *args]).returncode)
 elif name == "python" and args[0].endswith("provision-database.py"):
     if os.environ.get("SNAKEWEB_TEST_PROVISION_FAIL"):
         sys.exit(7)
@@ -129,8 +131,12 @@ class InstallationTests(unittest.TestCase):
         public.write_bytes(b'GIF89a saved public artifact')
         metadata = public.parent / 'live.json'
         metadata.write_text('{"updated":"2026-10-30 12:00","games":[]}\n')
+        network = self.deployed / 'conf/snakewebcode.json'
+        self.assertEqual(network.stat().st_mode & 0o777, 0o644)
+        self.assertEqual(network.parent.stat().st_mode & 0o777, 0o755)
+        network.write_text('{"network":{"http":{"port":18080}}}\n')
         saved = {path: (path.read_bytes(), path.stat().st_mode) for path in
-                 (environment, credentials, key, public, metadata)}
+                 (environment, credentials, key, public, metadata, network)}
         unused = [self.deployed / 'snakewebcode' / name for name in (
             'unused.py', 'unused/assets/template.html')]
         for path in unused:
@@ -159,7 +165,7 @@ class InstallationTests(unittest.TestCase):
         ] * 2)
         result = self.run_script("uninstall.sh")
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertFalse(self.deployed.exists())
+        self.assertEqual(list(self.deployed.iterdir()), [network.parent])
         self.assertFalse(self.unit.exists())
         for path, (content, mode) in saved.items():
             self.assertEqual((path.read_bytes(), path.stat().st_mode), (content, mode))
@@ -187,6 +193,20 @@ class InstallationTests(unittest.TestCase):
         for path in ('snake-web.env', 'database.env'):
             self.assertEqual((self.config / path).stat().st_mode & 0o777, 0o600)
         self.assertEqual(self.config.stat().st_mode & 0o777, 0o700)
+        network = self.deployed / 'conf/snakewebcode.json'
+        self.assertEqual(network.stat().st_mode & 0o777, 0o644)
+        self.assertEqual(network.parent.stat().st_mode & 0o777, 0o755)
+
+    def test_invalid_network_configuration_stops_upgrade_before_provisioning_or_service_changes(self):
+        network = self.deployed / 'conf/snakewebcode.json'
+        network.parent.mkdir(parents=True)
+        network.write_text('{"network":{"http":{"port":true}}}')
+        self.unit.write_text('existing service unit\n')
+        result = self.run_script('upgrade.sh')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('network.http.port', result.stderr)
+        self.assertEqual(self.unit.read_text(), 'existing service unit\n')
+        self.assertFalse(any(c[0] in ('systemctl', 'python') for c in self.commands()))
 
     def test_upgrade_rejects_symlinked_application_package(self):
         self.home.mkdir()

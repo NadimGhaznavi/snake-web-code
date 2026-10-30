@@ -13,4 +13,9 @@ class DSnakeWebCode:
     CMDB_DATABASES: Final[tuple[tuple[str, str], ...]] = (
         ("Snake Lab", "snakelab"),
     )
+    CMDB_NETWORK: Final[tuple[tuple[str, str, int], ...]] = (
+        ("http", "192.168.0.106", 8080),
+    )
+    BASE_DIR: Final[str] = "/opt/prod/snakewebcode"
+    CONFIG_FILE: Final[str] = "conf/snakewebcode.json"
     DAILY_GAME_LIMIT: Final[int] = 5
