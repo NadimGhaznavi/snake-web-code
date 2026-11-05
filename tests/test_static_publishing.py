@@ -11,6 +11,7 @@ from unittest.mock import Mock, patch
 from uuid import UUID
 
 from PIL import Image
+import pymysql
 import zmq
 
 from snakewebcode.activity.PublishLive import PublishLive
@@ -36,6 +37,9 @@ class StaticPublicationTests(unittest.TestCase):
         self.public = self.root / 'public'
         self.publisher = StaticPublisher(self.public)
         self.app = Mock()
+        self.app.get_status.return_value = dict(all_time_high_score=58, current_high_score=49,
+            completed_experiments=503, simulations_submitted=3588,
+            games_played=5368500, moves_made=835101262)
         self.app.get_daily_game_day.return_value = date(2026, 10, 29)
         self.app.get_daily_runs.return_value = [run(i) for i in range(8, 0, -1)]
         self.app.get_run_scores.return_value = [dict(id=i, high_score=i) for i in range(1, 9)]
@@ -45,7 +49,7 @@ class StaticPublicationTests(unittest.TestCase):
         self.snake.get_highscore_frames.side_effect = lambda uuid: frames(int(UUID(uuid)))
 
     def publish(self):
-        return PublishLive(self.app, self.publisher).run()
+        return PublishLive(self.app, self.publisher, hostname='neuromancer').run()
 
     def metadata(self):
         return json.loads((self.public / 'live.json').read_text())
@@ -65,6 +69,8 @@ class StaticPublicationTests(unittest.TestCase):
                 self.assertEqual(image.info['loop'], 0)
                 self.assertGreaterEqual(image.n_frames, 1 if name == self.publisher.PROGRESS_GIF_PATH else 2)
         self.assertTrue(self.metadata()['daily_progress'])
+        self.assertEqual(self.metadata()['status'],
+                         dict(hostname='neuromancer', **self.app.get_status.return_value))
         self.assertEqual((self.root / '.public-progress.json').stat().st_mode & 0o777, 0o600)
 
     def test_unchanged_and_restart_reuse_bytes_mtimes_and_timestamp(self):
@@ -135,11 +141,51 @@ class StaticPublicationTests(unittest.TestCase):
             render.assert_called_once()
 
     def test_manual_pass_before_first_observation_publishes_without_daily_chart(self):
-        PublishLive(self.app, self.publisher).run(collect_progress=False)
+        PublishLive(self.app, self.publisher, hostname='neuromancer').run(collect_progress=False)
         self.assertFalse(self.metadata()['daily_progress'])
         self.assertFalse((self.public / 'daily-progress.gif').exists())
         self.app.get_daily_progress_time.assert_not_called()
         self.app.get_daily_configurations.assert_not_called()
+        self.assertEqual(self.metadata()['status'],
+                         dict(hostname='neuromancer', **self.app.get_status.return_value))
+
+    def test_status_change_refreshes_metadata_and_timestamp_without_replacing_gifs(self):
+        self.publish()
+        saved = {p.name: (p.read_bytes(), p.stat().st_mtime_ns) for p in self.public.glob('*.gif')}
+        metadata = self.metadata()
+        metadata['updated'] = '2026-11-04 01:00'
+        (self.public / 'live.json').write_text(json.dumps(metadata))
+        self.app.get_status.return_value['moves_made'] += 1
+        self.snake.get_highscore_frames.reset_mock()
+        self.assertIn('published', self.publish())
+        self.assertEqual(self.metadata()['status']['moves_made'], 835101263)
+        self.assertNotEqual(self.metadata()['updated'], metadata['updated'])
+        self.assertEqual(saved, {p.name: (p.read_bytes(), p.stat().st_mtime_ns)
+                                 for p in self.public.glob('*.gif')})
+        self.snake.get_highscore_frames.assert_not_called()
+
+    def test_status_failure_preserves_previous_publication_and_retries(self):
+        self.publish()
+        saved = {p.name: p.read_bytes() for p in self.public.iterdir()}
+        self.app.get_status.side_effect = pymysql.err.OperationalError(1142, 'SELECT denied')
+        with self.assertRaises(pymysql.err.OperationalError):
+            self.publish()
+        self.assertEqual(saved, {p.name: p.read_bytes() for p in self.public.iterdir()})
+        self.app.get_status.side_effect = None
+        self.app.get_status.return_value['completed_experiments'] += 1
+        self.publish()
+        self.assertEqual(self.metadata()['status']['completed_experiments'], 504)
+
+    def test_status_metadata_write_failure_is_retried(self):
+        self.publish()
+        self.app.get_status.return_value['simulations_submitted'] += 1
+        with patch.object(self.publisher, '_replace', side_effect=OSError('disk full')):
+            with self.assertRaisesRegex(OSError, 'disk full'):
+                self.publish()
+        self.assertFalse((self.public / 'live.json').exists())
+        self.publish()
+        self.assertEqual(self.metadata()['status']['simulations_submitted'], 3589)
+        self.assertIn('unchanged', self.publish())
 
     def test_daily_observations_survive_interrupted_publication(self):
         self.publish()
@@ -243,9 +289,11 @@ class StaticPublicationTests(unittest.TestCase):
     def test_service_wires_static_publication(self):
         from snakewebcode import server
         with patch.dict(os.environ, PUBLISH_DIRECTORY=str(self.public)), \
+                patch.object(server.socket, 'gethostname', return_value='neuromancer'), \
                 patch.object(server, 'DbMgr') as db, patch.object(server, 'PublishLive') as activity:
             server.publish_once()
         db.assert_called_once_with()
         self.assertIsInstance(activity.call_args.args[1], StaticPublisher)
         self.assertEqual(activity.call_args.args[1].directory, self.public)
+        self.assertEqual(activity.call_args.kwargs, dict(hostname='neuromancer'))
         activity.return_value.run.assert_called_once_with(collect_progress=True)

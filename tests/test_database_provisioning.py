@@ -63,13 +63,35 @@ class ReaderConfigurationTests(unittest.TestCase):
         self.assertEqual(self.destination.stat().st_mode & 0o777, 0o600)
         self.assertEqual(self.destination.parent.stat().st_mode & 0o777, 0o700)
 
-    def test_reader_gets_only_the_simulation_table(self):
+    def test_reader_gets_only_simulations_and_required_status_columns(self):
         self.provision()
         calls = self.admin.cursor.return_value.__enter__.return_value.execute.call_args_list
         grants = [call.args[0] for call in calls if call.args[0].startswith('GRANT ')]
-        self.assertEqual(grants, ['GRANT SELECT ON snakelab.simulation_runs TO %s@%s'])
-        self.assertFalse(any('ax3l.' in call.args[0] for call in calls))
+        self.assertEqual(grants, [
+            'GRANT SELECT ON snakelab.simulation_runs TO %s@%s',
+            'GRANT SELECT (singleton, games_played, moves_made, all_time_high_score, '
+            'simulations_submitted, experiment_cycles, refreshed_at) ON ax3l.report_state TO %s@%s',
+            'GRANT SELECT (event_id, occurred_at, name, category, process_id) ON ax3l.events TO %s@%s',
+            'GRANT SELECT (event_id) ON ax3l.event_messages TO %s@%s'])
         self.assertTrue(any(call.args[0].startswith('REVOKE ALL PRIVILEGES') for call in calls))
+
+    def test_missing_ax3l_schema_preserves_credentials_and_account(self):
+        cursor = self.admin.cursor.return_value.__enter__.return_value
+        cursor.execute.side_effect = [None, pymysql.err.ProgrammingError(1146, 'missing report_state')]
+        with self.assertRaises(pymysql.err.ProgrammingError):
+            self.provision()
+        self.assertEqual(self.destination.read_text(), self.original)
+        self.assertFalse(any(call.args[0].startswith(('CREATE', 'ALTER', 'REVOKE', 'GRANT'))
+                             for call in cursor.execute.call_args_list))
+
+    def test_uninitialized_ax3l_summary_preserves_credentials_and_account(self):
+        cursor = self.admin.cursor.return_value.__enter__.return_value
+        cursor.fetchone.return_value = None
+        with self.assertRaisesRegex(RuntimeError, 'refresh them with Ax3l first'):
+            self.provision()
+        self.assertEqual(self.destination.read_text(), self.original)
+        self.assertFalse(any(call.args[0].startswith(('CREATE', 'ALTER', 'REVOKE', 'GRANT'))
+                             for call in cursor.execute.call_args_list))
 
     def test_socket_mismatch_preserves_file_and_account(self):
         self.destination.write_text(self.original.replace('snake-web-test.sock', 'other.sock'))
@@ -116,6 +138,14 @@ class ProvisioningTests(unittest.TestCase):
             with reader.cursor() as cursor:
                 cursor.execute('SELECT MAX(high_score) FROM simulation_runs')
                 self.assertEqual(cursor.fetchone()[0], 49)
+                cursor.execute('SELECT games_played, moves_made, all_time_high_score, '
+                               'simulations_submitted, experiment_cycles FROM ax3l.report_state '
+                               'WHERE singleton = 1 AND refreshed_at IS NOT NULL')
+                self.assertIsNotNone(cursor.fetchone())
+                cursor.execute('SELECT e.process_id FROM ax3l.events e '
+                               'JOIN ax3l.event_messages m USING (event_id) '
+                               'ORDER BY e.occurred_at DESC, e.event_id DESC LIMIT 1')
+                cursor.fetchone()
                 # Neither statement changes source data even if permissions regress.
                 for sql in ('UPDATE simulation_runs SET high_score=0 WHERE id=-1',
                             'UPDATE ax3l.events SET name=name WHERE event_id=-1',
@@ -123,6 +153,9 @@ class ProvisioningTests(unittest.TestCase):
                             "UPDATE configurations SET seed=seed WHERE run_id=''",
                             'SELECT * FROM mysql.user LIMIT 0',
                             'SELECT * FROM ax3l.events LIMIT 0',
+                            'SELECT content FROM ax3l.event_messages LIMIT 0',
+                            'SELECT * FROM ax3l.report_state LIMIT 0',
+                            'UPDATE ax3l.report_state SET games_played=0 WHERE singleton=-1',
                             'SELECT * FROM configurations LIMIT 0'):
                     with self.assertRaises(pymysql.err.OperationalError) as denied:
                         cursor.execute(sql)
@@ -142,9 +175,20 @@ class ProvisioningTests(unittest.TestCase):
             with reader.cursor() as cursor:
                 cursor.execute('SHOW GRANTS')
                 grants = [row[0] for row in cursor.fetchall()]
-                self.assertEqual(len(grants), 2)
+                self.assertEqual(len(grants), 5)
                 self.assertTrue(any('GRANT SELECT ON `snakelab`.`simulation_runs`' in row for row in grants))
                 self.assertFalse(any('INSERT' in row for row in grants))
+
+    def test_reader_can_export_status_using_the_publisher_query(self):
+        from snakewebcode.activity.AppDb import AppDb
+        from snakewebcode.interface.DbMgr import DbMgr
+
+        provisioner.provision(self.admin, self.socket, self.path)
+        credentials = provisioner.load_credentials(self.path)
+        with patch.dict(os.environ, credentials), DbMgr() as db:
+            status = AppDb(db).get_status()
+        self.assertEqual(status['current_high_score'], 49)
+        self.assertGreaterEqual(status['all_time_high_score'], 49)
 
     def test_foreign_file_does_not_create_account(self):
         self.path.parent.mkdir()

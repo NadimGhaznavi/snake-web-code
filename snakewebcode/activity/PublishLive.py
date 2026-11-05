@@ -1,4 +1,4 @@
-"""Publish daily games, observed daily scores, and the cumulative histogram."""
+"""Publish daily games, score charts, and display-server status."""
 
 from datetime import datetime
 import json
@@ -10,15 +10,18 @@ from snakewebcode.activity.ScoreDistribution import render_distribution
 
 
 class PublishLive:
-    def __init__(self, appdb, publisher):
+    def __init__(self, appdb, publisher, *, hostname):
         self._appdb = appdb
         self._publisher = publisher
+        self._hostname = hostname
 
     def run(self, *, collect_progress=True):
         publisher = self._publisher
         with publisher.session():
+            status = dict(hostname=self._hostname, **self._appdb.get_status())
             _, files = export_daily_games(self._appdb, publisher)
             state = json.loads(files.pop(publisher.DAILY_PATH))
+            state['status'] = status
             progress, progress_files = export_daily_progress(
                 self._appdb, publisher, collect=collect_progress)
             files.update(progress_files)

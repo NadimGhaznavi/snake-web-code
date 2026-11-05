@@ -19,6 +19,45 @@ distribution after its first scheduled observation. `live.json` exposes the
 boolean `daily_progress` flag so the page can hide an unavailable daily chart.
 Subsequent experiment updates modify static files and local daily observations.
 
+## Status metadata
+
+Every scheduled and manual pass adds this `status` object to `live.json`, alongside
+the existing game, chart, and `updated` fields. The separate website can read
+`live.status` and format numbers for display.
+
+```json
+{
+  "status": {
+    "hostname": "neuromancer",
+    "all_time_high_score": 58,
+    "current_high_score": 49,
+    "completed_experiments": 503,
+    "simulations_submitted": 3588,
+    "games_played": 5368500,
+    "moves_made": 835101262
+  }
+}
+```
+
+`hostname` identifies the publisher's host. Both highscores are nonnegative
+integers or `null` before a score is available; the remaining counters are
+nonnegative integers. Zero is a valid score. `current_high_score` comes from the
+latest golden-configuration event's Snake Lab run, using Ax3l's timestamp and
+event-ID ordering. It is `null` when that event or its scored run is absent.
+
+The other counters come from Ax3l's last completed `report_state` refresh, matching
+the display server. `completed_experiments` is Ax3l's `experiment_cycles` count;
+games, moves, and the all-time highscore summarize completed runs. Snake Web
+neither refreshes these summaries nor derives its own experiment counts. If
+Ax3l stops refreshing, its last summary remains in use. `updated` records the
+Snake Web publication time, not the Ax3l refresh time, and changes when status
+or another artifact changes. An unchanged pass preserves it.
+
+Run an installation or upgrade to grant the reader access to the required Ax3l
+columns. Ax3l must initialize and refresh its reporting tables first. Missing or
+uninitialized summaries, invalid counters, or query failures fail the publication
+before any public files change; scheduled passes retry at the next boundary.
+
 ## Caddy
 
 Public HTTPS terminates on wintermute, where DNS and router ports 80/443 point.
@@ -72,8 +111,8 @@ curl -i -H 'Origin: https://snakeweb.osoyalce.com' https://snake.osoyalce.com/li
 Expect `Cache-Control: no-store`, GIF content types, and the configured CORS origin.
 `game-one.gif` returns 404 when no qualifying capture exists today;
 `daily-progress.gif` returns 404 before the first scheduled observation. Verify
-the homepage's update time, game navigation, daily scores, and cumulative
-histogram on desktop and mobile.
+the `status` fields in `live.json`, the homepage's update time, game navigation,
+daily scores, and cumulative histogram on desktop and mobile.
 
 ## Recovery
 

@@ -1,4 +1,4 @@
-"""Read the source data needed by the daily games and score charts."""
+"""Read Snake Lab games and Ax3l's reporting status without changing source data."""
 
 from datetime import timedelta
 
@@ -8,6 +8,36 @@ from snakewebcode.interface.DbMgr import DbMgr
 class AppDb:
     def __init__(self, db: DbMgr):
         self._db = db
+
+    def get_status(self) -> dict:
+        """Use the display server's summaries and latest golden configuration."""
+        rows = self._db.query('''
+            SELECT s.all_time_high_score, r.high_score AS current_high_score,
+                   s.experiment_cycles AS completed_experiments,
+                   s.simulations_submitted, s.games_played, s.moves_made
+            FROM ax3l.report_state s
+            LEFT JOIN simulation_runs r ON r.run_id = (
+                SELECT e.process_id COLLATE utf8mb4_unicode_ci
+                FROM ax3l.events e JOIN ax3l.event_messages m USING (event_id)
+                WHERE e.category = %s AND e.name = %s
+                ORDER BY e.occurred_at DESC, e.event_id DESC LIMIT 1
+            )
+            WHERE s.singleton = 1 AND s.refreshed_at IS NOT NULL
+        ''', ('Configuration', 'golden_config_created'))
+        if not rows:
+            raise RuntimeError('Ax3l reporting summaries are not ready; refresh them with Ax3l first')
+        row = rows[0]
+        status = {}
+        for field in ('all_time_high_score', 'current_high_score', 'completed_experiments',
+                      'simulations_submitted', 'games_played', 'moves_made'):
+            value = row[field]
+            if value is None and field in ('all_time_high_score', 'current_high_score'):
+                status[field] = None
+            elif type(value) is int and value >= 0:
+                status[field] = value
+            else:
+                raise ValueError(f'Invalid Ax3l status field: {field}')
+        return status
 
     def get_run_scores(self) -> list[dict]:
         """Include current nullable scores in simulation submission order."""
