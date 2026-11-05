@@ -1,7 +1,8 @@
 # SnakeWebCode
 
 Python service that writes today's top five captured Snake games, animated daily
-scores, and a cumulative score distribution to static files served by Caddy at
+scores, a cumulative score distribution, and experiment status to static files
+served by Caddy at
 `https://snake.osoyalce.com`.
 The [Snake Web website](https://github.com/NadimGhaznavi/snake-web) contains the
 maintained page and navigation script; routine experiment updates never use Git.
@@ -47,6 +48,13 @@ interrupted write triggers fresh rendering on the next pass.
 A failed pass returns nonzero with `--once` or logs an error and retries later.
 Unchanged publications retain the existing files and update time.
 
+Each scheduled or manual pass includes the display server's status counters in
+`live.json`: hostname, all-time and current highscores, completed experiments,
+simulations submitted, games played, and moves made. Status changes refresh the
+metadata even when the GIFs are unchanged. See the
+[status contract](docs/devops/static-publishing.md#status-metadata) for field names,
+source ownership, and unavailable-data behavior.
+
 `daily-progress.gif` shows the day's top ten completed simulation scores as
 ascending bars, including zero scores and runs without saved game captures.
 Scheduled passes collect one observation per UTC half-hour, without backfilling
@@ -83,4 +91,4 @@ See [DevOps documentation](docs/devops/index.md) for installation, upgrade,
 publication, and CMDB discovery. The project owner handles production rollout.
 Upgrades replace the installed Python package and preserve configuration,
 credentials, and publication data. The dedicated database reader has SELECT
-access only to `snakelab.simulation_runs`.
+access to `snakelab.simulation_runs` and the required Ax3l status columns.

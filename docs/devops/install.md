@@ -9,7 +9,10 @@ Use Python 3 with venv support, systemd, the MariaDB client, and package downloa
 access. Snake Lab must provide `snakelab.simulation_runs` with `id`, `run_id`,
 `high_score`, `status`, and `completed_at`, plus the version-1 capture service.
 Ax3l owns the experiment workflow; the publisher reads the resulting Snake Lab
-records and never creates or changes source tables.
+records and never creates or changes source tables. Ax3l must also provide
+initialized, refreshed `ax3l.report_state` summaries and its `events` and
+`event_messages` tables for [status metadata](static-publishing.md#status-metadata).
+Use Ax3l's reporting refresh workflow to prepare those tables.
 
 Confirm the intended production host and source before installation. Use restored,
 isolated data for development; do not point verification at live experiments.
@@ -36,9 +39,11 @@ Root-only configuration lives under `/etc/snake-web` (directory mode `0700`):
   saved password and repairs only the dedicated reader's SELECT grants.
 - `snake-web.env`: publication settings, mode `0600`, preserved on upgrade.
 
-The provisioner enforces SELECT-only access to `snakelab.simulation_runs` for the
-dedicated reader, preserving its saved password. It does not alter source schemas
-or application accounts. After provisioning succeeds, the installer replaces the
+The provisioner enforces SELECT-only access to `snakelab.simulation_runs` and the
+required status columns in `ax3l.report_state`, `ax3l.events`, and
+`ax3l.event_messages`, preserving the reader's saved password. Event-message
+access is limited to `event_id`; message contents are not readable. It does not
+alter source schemas or application accounts. After provisioning succeeds, the installer replaces the
 Python package with the release's files. If provisioning fails, the existing
 Python package and service unit stay in place, but the virtual environment may
 already have changed; inspect the failure before retrying.
@@ -81,6 +86,7 @@ Tests use temporary files, disposable Git repositories for release tooling,
 and simulated system services. Optional database tests require an
 isolated MariaDB instance under a `/tmp/snake-web-*` socket; set
 `SNAKE_WEB_TEST_DB_SOCKET` to enable them. Reader-provisioning tests additionally
-require `SNAKE_WEB_PROVISION_TEST_SOCKET`. Never use production databases for these
-tests. A foreground `python -m snakewebcode.server --once` uses the configured
+require `SNAKE_WEB_PROVISION_TEST_SOCKET` and isolated Ax3l status fixtures.
+Never use production databases for these tests. A foreground
+`python -m snakewebcode.server --once` uses the configured
 source and writes real artifacts, so use a temporary `PUBLISH_DIRECTORY` in DEV.

@@ -23,8 +23,10 @@ dedicated database reader using its saved password. Local MariaDB root socket
 access is required. Once provisioning succeeds, the installer replaces the
 installed Python package with the release's files, removing unused application
 files. It preserves `/etc/snake-web`, the service account's home, credentials,
-and public artifacts. The reader has SELECT access only to
-`snakelab.simulation_runs`.
+and public artifacts. The reader has SELECT access to `snakelab.simulation_runs`
+and the required Ax3l status columns. Ax3l must initialize and refresh its
+reporting summaries before upgrading; see the
+[status contract](static-publishing.md#status-metadata).
 
 Configure the database and publisher as described in [Install Snake Web](install.md)
 and prepare [Caddy access](static-publishing.md) before the first publishing run.

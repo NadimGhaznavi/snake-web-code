@@ -8,7 +8,8 @@ sudo scripts/push-now.sh
 
 The script runs the installed code as `snake-web`, using configuration from
 `/etc/snake-web`, and returns its exit status. It refreshes today's top five games,
-the whole-experiment score distribution, and `live.json` in the public directory.
+the whole-experiment score distribution, and `live.json` in the public directory,
+including the [display-server status](static-publishing.md#status-metadata).
 It reuses saved daily score observations without adding a new sample, regenerating
 the daily GIF if needed. The daily chart first appears after a scheduled pass.
 It does not commit or push anything. Unchanged artifacts retain their saved bytes

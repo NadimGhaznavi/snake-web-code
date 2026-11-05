@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 import logging
 import os
 import signal
+import socket
 import threading
 
 import pymysql
@@ -21,6 +22,7 @@ def publish_once(*, collect_progress=True) -> str:
         return PublishLive(
             AppDb(db),
             StaticPublisher(os.environ.get('PUBLISH_DIRECTORY', '/var/lib/snake-web/public')),
+            hostname=socket.gethostname(),
         ).run(collect_progress=collect_progress)
 
 

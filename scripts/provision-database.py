@@ -60,6 +60,16 @@ def provision(admin, socket_path, credentials=CREDENTIALS):
             # Require the source schema to exist; never install Snake Lab's schema here.
             cursor.execute('SELECT id, run_id, high_score, status, completed_at '
                            'FROM snakelab.simulation_runs LIMIT 0')
+            cursor.execute('SELECT singleton, games_played, moves_made, all_time_high_score, '
+                           'simulations_submitted, experiment_cycles, refreshed_at '
+                           'FROM ax3l.report_state LIMIT 0')
+            cursor.execute('SELECT event_id, occurred_at, name, category, process_id '
+                           'FROM ax3l.events LIMIT 0')
+            cursor.execute('SELECT event_id FROM ax3l.event_messages LIMIT 0')
+            cursor.execute('SELECT singleton FROM ax3l.report_state '
+                           'WHERE singleton = 1 AND refreshed_at IS NOT NULL')
+            if cursor.fetchone() is None:
+                raise RuntimeError('Ax3l reporting summaries are not ready; refresh them with Ax3l first')
             cursor.execute('SELECT COUNT(*) FROM mysql.user WHERE User=%s AND Host=%s', (DB_USER, 'localhost'))
             account_exists = cursor.fetchone()[0] != 0
             if credentials.exists() or credentials.is_symlink():
@@ -86,10 +96,27 @@ def provision(admin, socket_path, credentials=CREDENTIALS):
             cursor.execute('REVOKE ALL PRIVILEGES, GRANT OPTION FROM %s@%s', (DB_USER, 'localhost'))
             cursor.execute('GRANT SELECT ON snakelab.simulation_runs TO %s@%s',
                            (DB_USER, 'localhost'))
+            cursor.execute('GRANT SELECT (singleton, games_played, moves_made, all_time_high_score, '
+                           'simulations_submitted, experiment_cycles, refreshed_at) '
+                           'ON ax3l.report_state TO %s@%s', (DB_USER, 'localhost'))
+            cursor.execute('GRANT SELECT (event_id, occurred_at, name, category, process_id) '
+                           'ON ax3l.events TO %s@%s', (DB_USER, 'localhost'))
+            cursor.execute('GRANT SELECT (event_id) ON ax3l.event_messages TO %s@%s',
+                           (DB_USER, 'localhost'))
         with pymysql.connect(unix_socket=socket_path, user=DB_USER, password=values['DB_PASSWORD'],
                              database=DB_NAME, connect_timeout=10, read_timeout=30, write_timeout=30) as reader:
             with reader.cursor() as cursor:
                 cursor.execute('SELECT MAX(high_score) FROM simulation_runs')
+                cursor.fetchone()
+                cursor.execute('SELECT games_played, moves_made, all_time_high_score, '
+                               'simulations_submitted, experiment_cycles FROM ax3l.report_state '
+                               'WHERE singleton = 1 AND refreshed_at IS NOT NULL')
+                cursor.fetchone()
+                cursor.execute('SELECT e.process_id FROM ax3l.events e '
+                               'JOIN ax3l.event_messages m USING (event_id) '
+                               'WHERE e.category = %s AND e.name = %s '
+                               'ORDER BY e.occurred_at DESC, e.event_id DESC LIMIT 1',
+                               ('Configuration', 'golden_config_created'))
                 cursor.fetchone()
 
 
@@ -108,7 +135,7 @@ def main():
                              connect_timeout=10, read_timeout=30, write_timeout=30) as admin:
             provision(admin, socket_path)
     except pymysql.MySQLError as exc:
-        print(f'Database provisioning failed (MariaDB error {exc.args[0]}). Check local root access and the Snake Lab simulation schema.', file=sys.stderr)
+        print(f'Database provisioning failed (MariaDB error {exc.args[0]}). Check local root access, Snake Lab simulations, and Ax3l reporting tables.', file=sys.stderr)
         return 1
     except subprocess.SubprocessError:
         print('Cannot discover local MariaDB socket. Check mariadb client and local root access.', file=sys.stderr)

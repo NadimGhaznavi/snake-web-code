@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.2.0] - 2026-11-05 @ 03:15
+
+### Added
+
+- Publish the display server's hostname, highscores, completed experiments,
+  simulations submitted, games played, and moves made in `live.json` on scheduled
+  and manual updates. Read Ax3l's reporting summaries with dedicated read-only
+  grants, and refresh metadata when only status changes.
+
 ## [5.1.0] - 2026-10-30 @ 17:59
 
 This release is named for the element **Uranium (U)**. Uranium was named after 
