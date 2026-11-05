@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.2.0] - 2026-11-05 @ 03:15
+
 ### Added
 
 - Publish the display server's hostname, highscores, completed experiments,
